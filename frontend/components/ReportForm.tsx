@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { AudioRecorder, type Recording } from './AudioRecorder'
 import { Icon, type IconName } from './Icon'
 
 const CATS: [string, IconName, string][] = [['piso', 'piso', 'Piso tátil interrompido'], ['obstaculo', 'alert', 'Obstáculo na calçada'], ['travessia', 'sound', 'Travessia sem som ou sinal visual'], ['sinalizacao', 'eye', 'Sinalização inadequada'], ['comunicacao', 'chat', 'Falta de comunicação acessível'], ['calcada', 'ruler', 'Calçada quebrada ou irregular'], ['outro', 'more', 'Outra barreira']]
@@ -35,26 +36,16 @@ export function ReportForm({ topic, format: initialFormat, bairros, bairro: init
   const [erro, setErro] = useState('')
   const [sending, setSending] = useState(false)
   const [recording, setRecording] = useState(false)
-  const rec = useRef<MediaRecorder | null>(null)
+  const [audio, setAudio] = useState<Recording | null>(null)
   const heading = useRef<HTMLHeadingElement>(null)
   const first = useRef(true)
   useEffect(() => { if (first.current) { first.current = false; return } heading.current?.focus() }, [step])
 
-  async function record() {
-    if (recording) { rec.current?.stop(); return }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const mr = new MediaRecorder(stream)
-      const parts: Blob[] = []
-      mr.ondataavailable = (e) => parts.push(e.data)
-      mr.onstop = () => {
-        stream.getTracks().forEach((t) => t.stop())
-        const type = mr.mimeType.split(';')[0] || 'audio/webm'
-        setFile(new File(parts, `audio.${type.includes('mp4') ? 'm4a' : 'webm'}`, { type }))
-        setRecording(false)
-      }
-      rec.current = mr; mr.start(); setRecording(true)
-    } catch { setErro('Não conseguimos acessar o microfone. Você pode enviar um arquivo de áudio.') }
+  // Áudio gravado ou enviado: vira o arquivo do relato e ganha um player para ouvir antes de enviar.
+  function pickAudio(r: Recording | null) {
+    if (audio && audio.url !== r?.url) URL.revokeObjectURL(audio.url)
+    setAudio(r)
+    setFile(r ? new File([r.blob], `audio.${r.type.includes('mp4') ? 'm4a' : r.type.split('/')[1] || 'webm'}`, { type: r.type }) : null)
   }
 
   function locate() {
@@ -117,16 +108,15 @@ export function ReportForm({ topic, format: initialFormat, bairros, bairro: init
           )}
           <fieldset className="stack" style={{ border: 0, margin: 0, padding: 0 }}>
             <legend className="h3" style={{ marginBottom: 12 }}>Conte do seu jeito</legend>
-            <div className="cols2">{FMT.map(([k, i, t, s]) => <Opt key={k} icon={i} title={t} sub={s} on={format === k} onClick={() => { setFormat(k); setFile(null) }} />)}</div>
+            <div className="cols2">{FMT.map(([k, i, t, s]) => <Opt key={k} icon={i} title={t} sub={s} on={format === k} onClick={() => { setFormat(k); setFile(null); pickAudio(null) }} />)}</div>
           </fieldset>
           {format === 'texto' && <div className="field"><label htmlFor="rel-body">Descreva a barreira</label><textarea className="input" id="rel-body" value={body} onChange={(e) => setBody(e.target.value)} maxLength={4000} placeholder="Ex.: o piso tátil acaba antes da faixa e eu perco a referência para atravessar." /></div>}
           {format === 'audio' && (
             <div className="card flat stack s8">
               <div className="row wrapr">
-                <button type="button" className="btn" onClick={record} aria-pressed={recording}>{recording ? <><span className="rec-dot" aria-hidden="true" />Parar gravação</> : <><Icon name="mic" />Gravar áudio</>}</button>
-                <label className="btn sec"><Icon name="file" />Enviar arquivo<input type="file" accept={accept} className="sr" onChange={(e) => setFile(e.target.files?.[0] ?? null)} /></label>
+                <AudioRecorder value={audio} onChange={pickAudio} big onRecording={setRecording} />
+                {!audio && !recording && <label className="btn sec"><Icon name="file" />Enviar arquivo<input type="file" accept={accept} className="sr" onChange={(e) => { const f = e.target.files?.[0]; if (f) pickAudio({ blob: f, type: f.type || 'audio/webm', duration: '', url: URL.createObjectURL(f) }) }} /></label>}
               </div>
-              {file && <audio controls src={URL.createObjectURL(file)} className="ev-media" />}
               <div className="field"><label htmlFor="rel-tr">Transcrição (opcional, você pode corrigir)</label><textarea className="input" id="rel-tr" value={body} onChange={(e) => setBody(e.target.value)} maxLength={4000} placeholder="O AJA transcreve o áudio. Se quiser, escreva ou corrija aqui." /></div>
             </div>
           )}

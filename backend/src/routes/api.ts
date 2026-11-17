@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { sql } from '../db.js'
 import { checkPassword, currentUserId, hashPassword, requireUser, setSessionCookie, signSession, COOKIE } from '../auth.js'
-import { allowedType, baseType, loadFile, saveFile } from '../storage.js'
+import { allowedType, baseType, deleteFile, loadFile, saveFile } from '../storage.js'
 import { placeFromMapsLink } from '../maps.js'
 import { buildDossier } from '../pdf.js'
 
@@ -106,6 +106,24 @@ async function threads(topicId: string, userId: string | null) {
 }
 
 export async function apiRoutes(app: FastifyInstance) {
+  // Notificações de reação: avisa as pessoas certas, nunca quem fez a ação, sem repetir a mesma reação.
+  const reportersOf = async (topicId: string) =>
+    (await sql`select distinct user_id from reports where topic_id = ${topicId} and user_id is not null`).map((r: any) => r.user_id as string)
+  async function notify(to: (string | null | undefined)[], n: { actorId: string; topicId: string; kind: string; title: string; body?: string; link?: string }) {
+    const [actor] = await sql`select name from users where id = ${n.actorId}`
+    const seen = new Set<string>()
+    for (const uid of to) {
+      if (!uid || uid === n.actorId || seen.has(uid)) continue
+      seen.add(uid)
+      const dup = await sql`select 1 from notifications where user_id = ${uid} and actor_id = ${n.actorId} and topic_id = ${n.topicId} and kind = ${n.kind} and coalesce(body, '') = ${n.body ?? ''} limit 1`
+      if (dup.length) continue
+      await sql`insert into notifications (user_id, topic_id, kind, actor_id, actor_name, title, body, link)
+        values (${uid}, ${n.topicId}, ${n.kind}, ${n.actorId}, ${actor?.name ?? null}, ${n.title}, ${n.body ?? null}, ${n.link ?? ''})`
+    }
+  }
+  const snippet = (s: string) => (s.length > 140 ? s.slice(0, 137).trimEnd() + '…' : s)
+  const firstName = (s: string) => s.trim().split(/\s+/)[0] ?? s
+
   app.get('/health', async () => ({ status: 'ok' }))
 
   // ── Conta ───────────────────────────────────────────────
@@ -142,7 +160,9 @@ export async function apiRoutes(app: FastifyInstance) {
     const id = await currentUserId(req)
     if (!id) return { usuario: null }
     const [u] = await sql`select id, name, email, role from users where id = ${id}`
-    return { usuario: u ?? null }
+    if (!u) return { usuario: null }
+    const [c] = await sql`select count(*)::int as n from notifications where user_id = ${id} and read_at is null`
+    return { usuario: { ...u, naoLidas: c.n } }
   })
 
   // ── Bairro ──────────────────────────────────────────────
@@ -183,13 +203,13 @@ export async function apiRoutes(app: FastifyInstance) {
     const userId = await currentUserId(req)
     const t = await findTopic((req.params as any).slug, userId)
     if (!t) return reply.code(404).send({ erro: 'Tópico não encontrado.' })
-    const reports = await sql`select id, format, body, caption, media_key, media_type, passes_by, lat, lng, heading, maps_url, created_at from reports where topic_id = ${t.id} order by created_at desc`
+    const reports = await sql`select id, user_id, format, body, caption, media_key, media_type, passes_by, lat, lng, heading, maps_url, created_at from reports where topic_id = ${t.id} order by created_at desc`
     const author = t.concept_author ? (await sql`select id, name, profession from users where id = ${t.concept_author}`)[0] : null
     return {
       ...shape(t),
       conceptAuthor: author,
       evidenceList: reports.map((r: any) => ({ id: r.id, format: r.format, body: r.body, caption: r.caption, media: r.media_key ? `/api/arquivos/${r.media_key}` : null, mediaType: r.media_type, passesBy: r.passes_by, ago: since(r.created_at),
-        place: r.lat != null ? { lat: r.lat, lng: r.lng, heading: r.heading ?? 0 } : null, mapsUrl: r.maps_url })),
+        place: r.lat != null ? { lat: r.lat, lng: r.lng, heading: r.heading ?? 0 } : null, mapsUrl: r.maps_url, mine: Boolean(userId && r.user_id === userId) })),
     }
   })
 
@@ -200,8 +220,13 @@ export async function apiRoutes(app: FastifyInstance) {
     const t = await findTopic((req.params as any).slug, userId)
     if (!t) return reply.code(404).send({ erro: 'Tópico não encontrado.' })
     const { passesBy } = Support.parse(req.body ?? {})
+    const before = await sql`select passes_by from supports where topic_id = ${t.id} and user_id = ${userId}`
     await sql`insert into supports (topic_id, user_id, passes_by) values (${t.id}, ${userId}, ${passesBy})
       on conflict (topic_id, user_id) do update set passes_by = excluded.passes_by`
+    if (!before.length) {
+      const [me] = await sql`select name from users where id = ${userId}`
+      await notify(await reportersOf(t.id), { actorId: userId, topicId: t.id, kind: 'apoio', title: `${firstName(me.name)} apoiou o seu relato`, body: passesBy ? 'E marcou que passa por essa barreira.' : undefined })
+    }
     return shape(await findTopic(t.slug, userId))
   })
   app.delete('/api/topicos/:slug/apoio', async (req, reply) => {
@@ -220,6 +245,15 @@ export async function apiRoutes(app: FastifyInstance) {
     return threads(t.id, userId)
   })
   const NewComment = z.object({ body: z.string().trim().min(1).max(2000), parentId: z.string().uuid().optional() })
+  async function notifyComment(topicId: string, actorId: string, actorName: string, parentId: string | undefined, body: string) {
+    const name = firstName(actorName)
+    if (parentId) {
+      const [p] = await sql`select user_id from comments where id = ${parentId}`
+      await notify([p?.user_id], { actorId, topicId, kind: 'resposta', title: `${name} respondeu o seu comentário`, body, link: '/comentarios' })
+    }
+    await notify(await reportersOf(topicId), { actorId, topicId, kind: 'comentario', title: `${name} comentou no seu relato`, body, link: '/comentarios' })
+  }
+
   app.post('/api/topicos/:slug/comentarios', { config: { rateLimit: { max: 20, timeWindow: '10 minutes' } } }, async (req, reply) => {
     const userId = await requireUser(req, reply); if (!userId) return
     const parsed = NewComment.safeParse(req.body)
@@ -235,6 +269,7 @@ export async function apiRoutes(app: FastifyInstance) {
     }
     await sql`insert into comments (topic_id, user_id, author_name, author_badge, parent_id, body)
       values (${t.id}, ${userId}, ${u.name}, ${badge}, ${parsed.data.parentId ?? null}, ${parsed.data.body})`
+    await notifyComment(t.id, userId, u.name, parsed.data.parentId, snippet(parsed.data.body))
     return threads(t.id, userId)
   })
   // Comentário em áudio (gravado no navegador), com transcrição opcional.
@@ -264,6 +299,7 @@ export async function apiRoutes(app: FastifyInstance) {
     const key = await saveFile(file.buffer, file.type)
     await sql`insert into comments (topic_id, user_id, author_name, author_badge, parent_id, kind, body, media_label, media_key, media_type)
       values (${t.id}, ${userId}, ${u.name}, ${badge}, ${parsed.data.parentId ?? null}, 'audio', ${parsed.data.body}, ${parsed.data.duration ?? null}, ${key}, ${file.type})`
+    await notifyComment(t.id, userId, u.name, parsed.data.parentId, parsed.data.body ? snippet(parsed.data.body) : 'Comentário em áudio')
     return threads(t.id, userId)
   })
 
@@ -272,7 +308,12 @@ export async function apiRoutes(app: FastifyInstance) {
     const id = z.string().uuid().safeParse((req.params as any).id)
     if (!id.success) return reply.code(400).send({ erro: 'Comentário inválido.' })
     const had = await sql`delete from comment_helpful where comment_id = ${id.data} and user_id = ${userId} returning 1`
-    if (!had.length) await sql`insert into comment_helpful (comment_id, user_id) values (${id.data}, ${userId}) on conflict do nothing`
+    if (!had.length) {
+      await sql`insert into comment_helpful (comment_id, user_id) values (${id.data}, ${userId}) on conflict do nothing`
+      const [c] = await sql`select user_id, topic_id, body, kind from comments where id = ${id.data}`
+      const [me] = await sql`select name from users where id = ${userId}`
+      if (c) await notify([c.user_id], { actorId: userId, topicId: c.topic_id, kind: 'util', title: `${firstName(me.name)} achou o seu comentário útil`, body: c.body ? snippet(c.body) : 'Comentário em áudio', link: '/comentarios' })
+    }
     const [c] = await sql`select c.seed_helpful + (select count(*)::int from comment_helpful where comment_id = c.id) as helpful from comments c where c.id = ${id.data}`
     return { helpful: c?.helpful ?? 0, mine: !had.length }
   })
@@ -445,9 +486,60 @@ export async function apiRoutes(app: FastifyInstance) {
     const userId = await requireUser(req, reply); if (!userId) return
     const mine = await sql`${topicSelect(userId)} where t.id in (select topic_id from reports where user_id = ${userId}) order by t.updated_at desc`
     const supported = await sql`${topicSelect(userId)} where t.id in (select topic_id from supports where user_id = ${userId}) order by t.updated_at desc`
-    const notes = await sql`select n.title, n.created_at, t.title as topic, t.slug from notifications n left join topics t on t.id = n.topic_id where n.user_id = ${userId} order by n.created_at desc limit 20`
     const pend = await sql`select p.body, t.slug from pendencies p join topics t on t.id = p.topic_id where p.open and t.id in (select topic_id from supports where user_id = ${userId} union select topic_id from reports where user_id = ${userId})`
-    return { relatos: mine.map(shape), apoios: supported.map(shape), avisos: notes.map((n: any) => ({ ...n, ago: since(n.created_at) })), pendencias: pend }
+    return { relatos: mine.map(shape), apoios: supported.map(shape), pendencias: pend }
+  })
+
+  app.get('/api/notificacoes', async (req, reply) => {
+    const userId = await requireUser(req, reply); if (!userId) return
+    const rows = await sql`select n.id, n.kind, n.title, n.body, n.link, n.actor_name, n.read_at, n.created_at, t.title as topic, t.slug
+      from notifications n left join topics t on t.id = n.topic_id where n.user_id = ${userId} order by n.created_at desc limit 50`
+    return rows.map((n: any) => ({ id: n.id, kind: n.kind, title: n.title, body: n.body, topic: n.topic, href: n.slug ? `/topicos/${n.slug}${n.link ?? ''}` : null,
+      actor: n.actor_name, read: Boolean(n.read_at), ago: since(n.created_at) }))
+  })
+  app.post('/api/notificacoes/lidas', async (req, reply) => {
+    const userId = await requireUser(req, reply); if (!userId) return
+    await sql`update notifications set read_at = now() where user_id = ${userId} and read_at is null`
+    return { ok: true }
+  })
+
+  // Quem enviou um relato pode corrigir o texto ou excluí-lo.
+  const ownReport = async (req: any, reply: any) => {
+    const userId = await requireUser(req, reply); if (!userId) return null
+    const id = z.string().uuid().safeParse(req.params.id)
+    if (!id.success) { reply.code(400).send({ erro: 'Relato inválido.' }); return null }
+    const [r] = await sql`select r.*, t.slug, t.stage from reports r join topics t on t.id = r.topic_id where r.id = ${id.data}`
+    if (!r) { reply.code(404).send({ erro: 'Relato não encontrado.' }); return null }
+    if (r.user_id !== userId) { reply.code(403).send({ erro: 'Só quem enviou pode mudar este relato.' }); return null }
+    return { r, userId }
+  }
+  const EditReport = z.object({ body: z.string().trim().max(4000).optional(), caption: z.string().trim().max(1000).optional() })
+  app.patch('/api/relatos/:id', async (req, reply) => {
+    const own = await ownReport(req, reply); if (!own) return
+    const parsed = EditReport.safeParse(req.body ?? {})
+    if (!parsed.success) return reply.code(400).send({ erro: 'Texto longo demais.' })
+    const body = parsed.data.body ?? own.r.body, caption = parsed.data.caption ?? own.r.caption
+    if (!body && !caption && !own.r.media_key && !own.r.maps_url) return reply.code(400).send({ erro: 'O relato não pode ficar vazio. Para tirar tudo, exclua o relato.' })
+    await sql`update reports set body = ${body}, caption = ${caption} where id = ${own.r.id}`
+    await sql`update topics set updated_at = now() where id = ${own.r.topic_id}`
+    return { ok: true }
+  })
+  app.delete('/api/relatos/:id', async (req, reply) => {
+    const own = await ownReport(req, reply); if (!own) return
+    await sql`delete from reports where id = ${own.r.id}`
+    if (own.r.media_key) await deleteFile(own.r.media_key)
+    // Um tópico que ficou sem nenhum relato, ainda no começo e sem participação de outras pessoas, sai junto.
+    const [left] = await sql`select count(*)::int as n from reports where topic_id = ${own.r.topic_id}`
+    const [others] = await sql`select
+      (select count(*)::int from comments where topic_id = ${own.r.topic_id} and coalesce(user_id::text, '') <> ${own.userId}) +
+      (select count(*)::int from supports where topic_id = ${own.r.topic_id} and user_id <> ${own.userId}) as n`
+    const [seed] = await sql`select seed_supports from topics where id = ${own.r.topic_id}`
+    if (left.n === 0 && own.r.stage < 2 && others.n === 0 && !seed?.seed_supports) {
+      await sql`delete from topics where id = ${own.r.topic_id}`
+      return { topicDeleted: true }
+    }
+    await sql`update topics set updated_at = now() where id = ${own.r.topic_id}`
+    return { topicDeleted: false, slug: own.r.slug }
   })
 
   // Pergunte ao AJA: repertório de respostas prontas.

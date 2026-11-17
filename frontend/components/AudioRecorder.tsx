@@ -7,7 +7,7 @@ export type Recording = { blob: Blob; type: string; duration: string; url: strin
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 
 // Grava áudio pelo microfone do aparelho. Anuncia o estado para leitores de tela.
-export function AudioRecorder({ value, onChange, max = 180 }: { value: Recording | null; onChange: (r: Recording | null) => void; max?: number }) {
+export function AudioRecorder({ value, onChange, max = 180, big = false, onRecording }: { value: Recording | null; onChange: (r: Recording | null) => void; max?: number; big?: boolean; onRecording?: (on: boolean) => void }) {
   const [state, setState] = useState<'idle' | 'rec'>('idle')
   const [secs, setSecs] = useState(0)
   const [erro, setErro] = useState('')
@@ -16,6 +16,7 @@ export function AudioRecorder({ value, onChange, max = 180 }: { value: Recording
   const started = useRef(0)
 
   useEffect(() => () => { if (timer.current) clearInterval(timer.current); rec.current?.stream.getTracks().forEach((t) => t.stop()) }, [])
+  useEffect(() => { onRecording?.(state === 'rec') }, [state, onRecording])
 
   async function start() {
     setErro('')
@@ -53,7 +54,7 @@ export function AudioRecorder({ value, onChange, max = 180 }: { value: Recording
   if (value) {
     return (
       <div className="rec-box">
-        <audio src={value.url} controls aria-label={`Seu áudio, ${value.duration}`} />
+        <audio src={value.url} controls aria-label={`Ouvir o seu áudio${value.duration ? `, ${value.duration}` : ''}`} />
         <button className="btn ghost sm" type="button" onClick={() => { URL.revokeObjectURL(value.url); onChange(null) }}><Icon name="x" />Descartar áudio</button>
       </div>
     )
@@ -65,7 +66,7 @@ export function AudioRecorder({ value, onChange, max = 180 }: { value: Recording
           <span className="rec-dot" aria-hidden="true" /><Icon name="stop" />Parar · {fmt(secs)}
         </button>
       ) : (
-        <button className="chip" type="button" onClick={start}><Icon name="mic" size={16} />Gravar áudio</button>
+        <button className={big ? 'btn' : 'chip'} type="button" onClick={start}><Icon name="mic" size={big ? undefined : 16} />Gravar áudio</button>
       )}
       <span className="sr" aria-live="polite">{state === 'rec' ? 'Gravando áudio. Toque em parar para terminar.' : ''}</span>
       {erro && <p className="error" role="alert" style={{ flexBasis: '100%' }}>{erro}</p>}

@@ -6,6 +6,7 @@ import { Icon, type IconName } from '@/components/Icon'
 import { TopicAction } from '@/components/TopicAction'
 import { ListenButton } from '@/components/ListenButton'
 import { AskAja } from '@/components/AskAja'
+import { EvidenceActions } from '@/components/EvidenceActions'
 import { OpenInMaps, StreetView } from '@/components/Place'
 
 const FMT: Record<string, [IconName, string]> = { texto: ['file', 'Texto'], audio: ['mic', 'Áudio · transcrito'], foto: ['camera', 'Foto · com descrição'], libras: ['hand', 'Vídeo em Libras · legendado'], mapa: ['pin', 'Google Maps · Street View'] }
@@ -21,7 +22,7 @@ export default async function Evidencias({ params }: { params: Promise<{ slug: s
         <TopicHeader t={t} tab="Evidências" />
         <div className="grid wide">
           <div className="stack">
-            <div className="row sb wrapr"><h2 className="h3">{t.reports} relatos e evidências</h2><Link className="btn sm" href={`/relatar?topico=${t.slug}`}><Icon name="plus" />Adicionar evidência</Link></div>
+            <div className="row sb wrapr"><h2 className="h3">{t.evidenceList.length} {t.evidenceList.length === 1 ? 'relato ou evidência' : 'relatos e evidências'}</h2><Link className="btn sm" href={`/relatar?topico=${t.slug}`}><Icon name="plus" />Adicionar evidência</Link></div>
             <div className="cols2">
               {t.evidenceList.map((e) => (
                 <article key={e.id} className="card">
@@ -33,6 +34,7 @@ export default async function Evidencias({ params }: { params: Promise<{ slug: s
                   {e.caption && <p className="small"><b>{e.format === 'foto' || e.format === 'mapa' ? 'Descrição' : 'Legenda'}:</b> {e.caption}</p>}
                   {e.body && <p>{e.format === 'texto' || e.format === 'mapa' ? e.body : `“${e.body}”`}</p>}
                   <div><ListenButton text={e.caption || e.body} className="btn ghost sm" /></div>
+                  {e.mine && <EvidenceActions ev={{ id: e.id, format: e.format, body: e.body, caption: e.caption }} slug={t.slug} />}
                 </article>
               ))}
             </div>

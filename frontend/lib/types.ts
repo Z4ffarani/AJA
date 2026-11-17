@@ -15,12 +15,13 @@ export type Topic = {
 }
 export type TopicDetail = Topic & {
   conceptAuthor: { id: string; name: string; profession: string } | null
-  evidenceList: { id: string; format: string; body: string; caption: string; media: string | null; mediaType: string | null; passesBy: boolean; ago: string; place: Place | null; mapsUrl: string | null }[]
+  evidenceList: { id: string; format: string; body: string; caption: string; media: string | null; mediaType: string | null; passesBy: boolean; ago: string; place: Place | null; mapsUrl: string | null; mine: boolean }[]
 }
 export type Comment = { id: string; author: string; initials: string; badge: string | null; kind: string; body: string; mediaLabel: string | null; helpful: number; mineHelpful: boolean; ago: string; volunteerId: string | null; media: string | null }
 export type Thread = Comment & { replies: Comment[]; lastReplyAgo: string | null }
 export type Question = { id: number; context: string; question: string; answer: string }
-export type User = { id: string; name: string; email: string; role: string }
+export type User = { id: string; name: string; email: string; role: string; naoLidas?: number }
+export type Notificacao = { id: string; kind: string; title: string; body: string | null; topic: string | null; href: string | null; actor: string | null; read: boolean; ago: string }
 export type Prefs = { tema: 'claro' | 'escuro' | 'auto'; texto: number; contraste: boolean; movimento: boolean; libras: boolean; voz: boolean; legendas: boolean; avisos: boolean }
 
 export const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`

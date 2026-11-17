@@ -199,3 +199,12 @@ alter table comments add column if not exists media_type text;
 alter table refs add column if not exists checker_id uuid references users(id) on delete set null;
 
 create index if not exists topics_neighborhood_idx on topics(neighborhood_slug);
+
+-- ── v3: notificações com reações e leitura ──
+alter table notifications add column if not exists kind text not null default 'aviso';
+alter table notifications add column if not exists actor_id uuid references users(id) on delete set null;
+alter table notifications add column if not exists actor_name text;
+alter table notifications add column if not exists body text;
+alter table notifications add column if not exists link text not null default '';
+alter table notifications add column if not exists read_at timestamptz;
+create index if not exists notifications_user_idx on notifications(user_id, read_at);

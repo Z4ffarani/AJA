@@ -16,6 +16,7 @@ function activeOf(path: string) {
 
 export function Bar({ user }: { user: User | null }) {
   const active = activeOf(usePathname())
+  const unread = user?.naoLidas ?? 0
   const router = useRouter()
   return (
     <header className="bar">
@@ -32,7 +33,7 @@ export function Bar({ user }: { user: User | null }) {
       </form>
       <Link className="iconbtn" href="/acessibilidade" aria-label="Acessibilidade e tema"><Icon name="text" /></Link>
       <LibrasButton />
-      <Link className="iconbtn" href="/acompanhar#avisos" aria-label="Avisos"><Icon name="bell" /></Link>
+      <Link className="iconbtn" href={user ? '/acompanhar?aba=notificacoes' : '/entrar?voltar=/acompanhar?aba=notificacoes'} aria-label={unread ? `Notificações, ${unread} ${unread === 1 ? 'nova' : 'novas'}` : 'Notificações'}><Icon name="bell" />{unread > 0 && <span className="nbadge" aria-hidden="true">{unread > 9 ? '9+' : unread}</span>}</Link>
       <Link className="btn sm" href="/relatar"><Icon name="plus" />Relatar barreira</Link>
       {user
         ? <Link className="avatar" href="/acompanhar" aria-label={`Minha conta: ${user.name}`}>{user.name.trim()[0]?.toUpperCase()}</Link>
@@ -58,13 +59,17 @@ const NAV = [['home', 'Início', '/'], ['list', 'Acompanhar', '/acompanhar'], ['
 
 export function MNav({ user }: { user: User | null }) {
   const path = usePathname()
+  const unread = user?.naoLidas ?? 0
   if (path.startsWith('/relatar') || path.startsWith('/topicos')) return null
   const active = path === '/' ? 'Início' : path.startsWith('/acompanhar') ? 'Acompanhar' : path.startsWith('/conquistas') ? 'Conquistas' : path.startsWith('/entrar') ? 'Perfil' : ''
   return (
     <nav className="mnav" aria-label="Navegação">
       {NAV.map(([ic, t, href]) => t === 'Relatar'
         ? <Link key={t} className="rel" href={href}><span className="plus"><Icon name="plus" /></span>Relatar</Link>
-        : <Link key={t} className={t === active ? 'on' : undefined} aria-current={t === active ? 'page' : undefined} href={t === 'Perfil' && user ? '/acompanhar' : href}><Icon name={ic} size={24} />{t}</Link>)}
+        : <Link key={t} className={t === active ? 'on' : undefined} aria-current={t === active ? 'page' : undefined} href={t === 'Perfil' && user ? '/acompanhar' : href}
+            >
+            <span className="nwrap"><Icon name={ic} size={24} />{t === 'Acompanhar' && unread > 0 && <span className="nbadge" aria-hidden="true">{unread > 9 ? '9+' : unread}</span>}</span>{t}
+            {t === 'Acompanhar' && unread > 0 && <span className="sr">, {unread} {unread === 1 ? 'notificação nova' : 'notificações novas'}</span>}</Link>)}
     </nav>
   )
 }

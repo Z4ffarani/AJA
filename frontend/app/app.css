@@ -90,3 +90,23 @@ button:disabled,.btn[aria-disabled=true]{opacity:.6;cursor:not-allowed}
    A margem do mesmo tamanho centraliza o botão inteiro (caixa + borda) na barra. */
 .bar :is(.btn,.iconbtn:not(.ghost)),.mhead :is(.btn,.iconbtn:not(.ghost)){margin-bottom:var(--d)}
 .mhead{padding:8px 12px 8px 16px}
+
+/* Contador de notificações */
+.iconbtn{position:relative}
+.nwrap{position:relative;display:inline-flex}
+.nbadge{position:absolute;top:-6px;right:-8px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--red);color:var(--surface);font-size:.75rem;font-weight:700;line-height:1;display:grid;place-items:center;border:2px solid var(--surface);pointer-events:none}
+.notif{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:12px;color:inherit;text-decoration:none}
+.notif+.notif{margin-top:2px}
+.notif.new{background:var(--primarysoft)}
+.notif .who{flex:none;width:40px;height:40px;border-radius:999px;display:grid;place-items:center;background:var(--surface2);color:var(--primary);font-weight:700}
+.notif.new .who{background:var(--primary);color:var(--onprimary)}
+.notif .dot{flex:none;width:10px;height:10px;border-radius:999px;background:var(--primary);margin-top:6px}
+.tabn{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;margin-left:6px;border-radius:999px;background:var(--red);color:var(--surface);font-size:.75rem;font-weight:700}
+.btn.danger{background:var(--red);color:var(--surface)!important;--deep:color-mix(in oklab,var(--red) 68%,#000)}
+.aja .notif,.aja .notif *{text-decoration:none;color:var(--ink)}
+.aja .notif .muted{color:var(--muted)}
+.aja .notif:hover b{text-decoration:underline;text-underline-offset:3px}
+.aja .notif.new .who{color:var(--onprimary)}
+.aja .notif .who{color:var(--primary)}
+.aja .notif .who,.aja .notif .who *{color:var(--primary)}
+.aja .notif.new .who,.aja .notif.new .who *{color:var(--onprimary)}

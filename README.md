@@ -16,13 +16,13 @@ AJA é uma plataforma de participação cidadã que transforma relatos da comuni
 
 ## Como funciona
 
-1. **Relatar:** a pessoa conta a barreira por texto, áudio, foto ou vídeo em Libras, diz onde fica e se passa por ali. Um link do Google Maps ou do Street View vira evidência com a vista do local.
+1. **Relatar:** a pessoa conta a barreira por texto, áudio, foto ou vídeo em Libras, diz onde fica e se passa por ali. Um link do Google Maps ou do Street View vira evidência com a vista do local. Quem enviou pode editar ou excluir a própria evidência depois.
 2. **Organizar:** relatos do mesmo tipo e no mesmo lugar são reunidos em um único tópico, com mapa e Street View do endereço.
 3. **Apoiar:** um único voto, com a marcação opcional “Passo por essa barreira”, que conta como evidência. Apoio mostra mobilização, mas não é condição para a barreira ser atendida.
 4. **Conversar:** comentários em texto ou áudio gravado no navegador, organizados em conversas, com respostas recuadas e marcação de comentários úteis.
 5. **Fundamentar:** cada tópico reúne dados públicos (SP156), normas técnicas, leis e estudos, conferidos por voluntários.
 6. **Dossiê:** o AJA gera um PDF com texto real, legível por leitor de tela, sem dados pessoais.
-7. **Acompanhar:** protocolo, pendências, decisões e justificativas da prefeitura ficam visíveis numa linha do tempo.
+7. **Acompanhar:** protocolo, pendências, decisões e justificativas da prefeitura ficam visíveis numa linha do tempo. Na aba Notificações, a pessoa vê quem apoiou o seu relato, quem comentou ou respondeu e quem achou o seu comentário útil, com um contador de novidades no cabeçalho.
 8. **Conquistas:** depois da obra, o apoio dá lugar à avaliação. Antes e depois, notas e a pergunta “A barreira continua resolvida?” mantêm a melhoria verificada ao longo do tempo.
 
 O piloto é o Parque Doroteia, e dois bairros vizinhos (Parque Primavera e Balneário São Francisco) mostram como o AJA cresce. A pessoa troca de bairro na página inicial. As ruas e coordenadas dos exemplos são reais; as barreiras, pessoas e protocolos são simulados e aparecem marcados como exemplo.

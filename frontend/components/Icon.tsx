@@ -3,11 +3,12 @@ import {
   House, ListBullets, User, TextAa, Hand, Microphone, Camera, VideoCamera, MapPin, FileText, ChatCircle, Link as LinkIcon,
   Cube, Star, Clock, DownloadSimple, Export, Buildings, Bell, Eye, Moon, Sun, DotsThreeOutline, Warning, Lock, PaperPlaneRight,
   GraduationCap, Ruler, Footprints, EnvelopeSimple, DeviceMobile, ArrowClockwise, Stack, Flag, CalendarBlank, ChartBar,
-  ArrowBendUpLeft, ClosedCaptioning, ChatsCircle, CaretDown, Question, SignOut, Stop, CaretUp,
+  ArrowBendUpLeft, ClosedCaptioning, ChatsCircle, CaretDown, Question, SignOut, Stop, CaretUp, PencilSimple, Trash,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon as PhIcon } from '@phosphor-icons/react'
 
 const MAP = {
+  edit: PencilSimple, trash: Trash,
   up: ArrowFatUp, down: ArrowFatDown, check: CheckFat, plus: PlusCircle, x: XCircle, play: Play, sound: SpeakerHigh,
   back: CaretLeft, arrow: ArrowCircleRight, search: MagnifyingGlass, home: House, list: ListBullets, user: User, text: TextAa,
   hand: Hand, mic: Microphone, camera: Camera, video: VideoCamera, pin: MapPin, file: FileText, chat: ChatCircle, link: LinkIcon,
