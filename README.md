@@ -6,6 +6,14 @@ AJA é uma plataforma de participação cidadã que transforma relatos da comuni
 
 ---
 
+## Integrantes
+
+- [Guilherme Santos Nunes](https://github.com/sannunez)
+- [Kaique Zaffarani](https://github.com/Z4ffarani)
+- [Pedro Josué Pereira Almeida](https://github.com/Pedro-Josue)
+
+---
+
 ## Como funciona
 
 1. **Relatar:** a pessoa conta a barreira por texto, áudio, foto ou vídeo em Libras, diz onde fica e se passa por ali. Um link do Google Maps ou do Street View vira evidência com a vista do local.
