@@ -1,8 +1,16 @@
-![AJA](frontend/public/banner.png)
+![AJA](./assets/banner.png)
 
 **[Site](https://aja-app.up.railway.app)**
 
 AJA é uma plataforma de participação cidadã que transforma relatos da comunidade em propostas fundamentadas de melhoria da infraestrutura dos bairros. O piloto acontece no Parque Doroteia, em São Paulo, com foco em acessibilidade para pessoas com deficiência visual e auditiva. Moradores relatam barreiras do jeito que preferirem (texto, áudio, foto ou vídeo em Libras), a comunidade apoia e reúne evidências, e o AJA monta um dossiê para a prefeitura e acompanha o protocolo até a barreira ser removida e verificada por quem passa por ali.
+
+---
+
+## Integrantes
+
+- [Guilherme Santos Nunes](https://github.com/sannunez)
+- [Kaique Zaffarani](https://github.com/Z4ffarani)
+- [Pedro Josué Pereira Almeida](https://github.com/Pedro-Josue)
 
 ---
 
@@ -102,6 +110,16 @@ O front-end conversa com o back-end pela rede privada do Railway (`BACKEND_URL=h
 - Os números de tempo de resposta vêm dos dados abertos do SP156 (2020 a 2026).
 - O concept 3D é uma visualização conceitual, não um projeto executivo.
 - Não insira informações pessoais reais na plataforma.
+
+---
+
+## Projetos acadêmicos
+
+| Entrega | Repositório |
+|---|---|
+| Global Solution · Inteligência Artificial & Machine Learning · FIAP 2026.2 | [2026-SEM2-GS-ARTIFICIAL-INTELLIGENCE-AND-MACHINE-LEARNING](https://github.com/Z4FFARANI-EDUCATIONAL/2026-SEM2-GS-ARTIFICIAL-INTELLIGENCE-AND-MACHINE-LEARNING) |
+| Global Solution · Cybersecurity · FIAP 2026.2 | [2026-SEM2-GS-CYBERSECURITY](https://github.com/Z4FFARANI-EDUCATIONAL/2026-SEM2-GS-CYBERSECURITY) |
+| Global Solution · Physical Computing: IoT & IoB · FIAP 2026.2 | [GS-IOT](https://github.com/Z4ffarani/GS-IOT) |
 
 ---
 
