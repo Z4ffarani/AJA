@@ -6,6 +6,7 @@ import rateLimit from '@fastify/rate-limit'
 import { config } from './config.js'
 import { migrate } from './db.js'
 import { seedIfEmpty } from './seed/run.js'
+import { runTask } from './tasks.js'
 import { apiRoutes } from './routes/api.js'
 
 const app = Fastify({ logger: { level: config.isProd ? 'info' : 'warn', redact: ['req.headers.authorization', 'req.headers.cookie'] }, trustProxy: true, bodyLimit: 1_000_000 })
@@ -32,4 +33,5 @@ await app.register(apiRoutes)
 
 await migrate()
 await seedIfEmpty()
+await runTask()
 await app.listen({ port: config.port, host: process.env.HOST ?? '::' })
