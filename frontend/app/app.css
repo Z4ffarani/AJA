@@ -20,3 +20,41 @@ button:disabled,.btn[aria-disabled=true]{opacity:.6;cursor:not-allowed}
 .btn.apo{background:var(--primarysoft);color:var(--primary)!important;border:2px solid var(--primaryline)}
 .seg a,.seg button{flex:1;text-align:center;padding:9px 10px;border-radius:9px;font-weight:600;font-size:.9375rem;white-space:nowrap;border:0;background:transparent;color:var(--ink);text-decoration:none;cursor:pointer}
 .seg a.on,.seg button.on,.seg [aria-checked=true],.seg [aria-selected=true]{background:var(--primarysoft);color:var(--primary);font-weight:700;box-shadow:inset 0 0 0 2px var(--primary)}
+
+/* ---------- Movimento ---------- */
+/* Botões com profundidade: a borda de baixo é mais grossa (sombra sólida).
+   Ao clicar, o botão afunda e a borda de baixo fica igual à de cima. */
+.aja{--deep:color-mix(in oklab,var(--primary) 68%,#000);--greendeep:color-mix(in oklab,var(--green) 68%,#000)}
+.btn,.iconbtn:not(.ghost),.vote .box,.opt,.ask-chip,.chip,.more-replies{position:relative;transition:transform .1s ease-out,box-shadow .1s ease-out,background-color .15s,border-color .15s,color .15s,filter .15s}
+.btn{--d:4px;box-shadow:0 var(--d) 0 var(--deep)}
+.btn.green{box-shadow:0 var(--d) 0 var(--greendeep)}
+.btn.sec,.btn.ghost{box-shadow:0 var(--d) 0 var(--cardline)}
+.btn.apo{box-shadow:0 var(--d) 0 var(--primaryline)}
+.iconbtn:not(.ghost){--d:3px;box-shadow:0 var(--d) 0 var(--cardline)}
+.vote{gap:10px}
+.vote .box{--d:4px;box-shadow:0 var(--d) 0 var(--primaryline)}
+.vote.voted .box{box-shadow:0 var(--d) 0 var(--deep)}
+.opt,.ask-chip,.chip,.more-replies{--d:3px;box-shadow:0 var(--d) 0 var(--cardline)}
+.opt.on,.ask-chip.on,.chip.on{box-shadow:0 var(--d) 0 var(--primary)}
+:is(.btn,.iconbtn:not(.ghost),.vote .box,.opt,.ask-chip,.chip,.more-replies):active:not(:disabled):not([aria-disabled=true]){transform:translateY(var(--d));box-shadow:0 0 0 transparent;transition-duration:.05s}
+/* Mantém a área de clique no lugar enquanto o botão está afundado */
+:is(.btn,.iconbtn:not(.ghost),.vote .box,.opt,.ask-chip,.chip,.more-replies):active::after{content:'';position:absolute;left:0;right:0;top:calc(-1 * var(--d) - 2px);bottom:0}
+.mnav .plus{box-shadow:0 3px 0 var(--deep);transition:transform .1s ease-out,box-shadow .1s ease-out}
+.mnav a:active .plus{transform:translateY(3px);box-shadow:0 0 0 transparent}
+
+/* Botões planos: um leve aperto */
+.act,.seg a,.seg button,.navlink,.tabs a,.mnav a{transition:transform .1s ease-out,background-color .15s,color .15s,border-color .15s,box-shadow .15s}
+.act:active,.seg a:active,.seg button:active,.navlink:active,.mnav a:active{transform:scale(.95)}
+
+/* Interruptor desliza em vez de pular */
+.toggle,.toggle.on{justify-content:flex-start;transition:background-color .18s}
+.toggle::after{transition:transform .2s cubic-bezier(.3,.7,.4,1.25)}
+.toggle.on::after{transform:translateX(22px)}
+
+/* Transição entre páginas: o conteúdo sobe e aparece; o cabeçalho fica parado */
+.page-in{display:contents}
+.page-in>main{animation:page-in .22s ease-out backwards}
+@keyframes page-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* Quem pede menos movimento no sistema ou no painel de acessibilidade */
+@media (prefers-reduced-motion: reduce){.aja *{transition-duration:.01ms!important;animation:none!important}}

@@ -32,4 +32,4 @@ await app.register(apiRoutes)
 
 await migrate()
 await seedIfEmpty()
-await app.listen({ port: config.port, host: '::' })
+await app.listen({ port: config.port, host: process.env.HOST ?? '::' })
