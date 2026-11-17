@@ -1,12 +1,15 @@
-// Popula o banco com os dados de exemplo do piloto (só quando está vazio).
+// Popula o banco com os dados de exemplo do piloto.
+// Quando SEED_VERSION muda, os tópicos de exemplo são refeitos (contas de usuários são mantidas).
 import { randomBytes } from 'node:crypto'
 import { sql } from '../db.js'
 import { hashPassword } from '../auth.js'
-import { TOPICS, REPORTS, COMMENTS, REFS, VOLUNTEER } from './data.js'
+import { TOPICS, REPORTS, COMMENTS, REFS, VOLUNTEER, NEIGHBORHOODS, FLAGSHIP } from './data.js'
 import { QUESTIONS } from './questions.js'
 
+export const SEED_VERSION = '3'
 const daysAgo = (d: number) => new Date(Date.now() - d * 86400000)
 const dateOnly = (d: number) => daysAgo(d).toISOString().slice(0, 10)
+const hood = (t: { neighborhood?: string }) => NEIGHBORHOODS.find((b) => b.slug === (t.neighborhood ?? 'parque-doroteia'))!
 
 export async function seedIfEmpty() {
   // O repertório de perguntas é sempre atualizado com o código.
@@ -16,8 +19,20 @@ export async function seedIfEmpty() {
     await sql`insert into questions (context, question, answer, sort) values (${q.context}, ${q.question}, ${q.answer}, ${i++})`
   }
 
-  const [{ count }] = await sql<{ count: number }[]>`select count(*)::int as count from topics`
-  if (count > 0) return
+  // Bairros: sempre atualizados com o código.
+  let n = 0
+  for (const b of NEIGHBORHOODS) {
+    await sql`insert into neighborhoods (slug, name, district, lat, lng, pilot, sort) values (${b.slug}, ${b.name}, ${b.district}, ${b.lat}, ${b.lng}, ${b.pilot}, ${n++})
+      on conflict (slug) do update set name = excluded.name, district = excluded.district, lat = excluded.lat, lng = excluded.lng, pilot = excluded.pilot, sort = excluded.sort`
+  }
+
+  const [ver] = await sql<{ value: string }[]>`select value from meta where key = 'seed_version'`
+  if (ver?.value === SEED_VERSION) return
+  // Versão nova dos exemplos: apaga tópicos, relatos e notificações e refaz.
+  await sql`delete from notifications`
+  await sql`delete from reports`
+  await sql`delete from contributions`
+  await sql`delete from topics`
 
   // Conta de voluntária de exemplo, sem senha utilizável.
   const unusable = await hashPassword(randomBytes(32).toString('hex'))
@@ -25,17 +40,18 @@ export async function seedIfEmpty() {
     insert into users (name, email, password_hash, role, profession, bio, tags, verified, links)
     values (${VOLUNTEER.name}, ${VOLUNTEER.email}, ${unusable}, 'voluntario', ${VOLUNTEER.profession}, ${VOLUNTEER.bio},
             ${VOLUNTEER.tags}, true, ${sql.json(VOLUNTEER.links)})
+    on conflict (email) do update set name = excluded.name, profession = excluded.profession, bio = excluded.bio, tags = excluded.tags, links = excluded.links
     returning id`
 
   const ids: Record<string, string> = {}
   for (const t of TOPICS) {
     const [row] = await sql<{ id: string }[]>`
-      insert into topics (slug, title, category, audiences, address, summary, proposal, photo_description, stage,
+      insert into topics (slug, title, category, audiences, address, neighborhood, neighborhood_slug, lat, lng, heading, example, summary, proposal, photo_description, stage,
         protocol_number, protocol_org, protocol_opened_at, protocol_status, next_step,
         dossier_number, dossier_at, dossier_sent_at, dossier_version,
         before_description, after_description, before_date, after_date,
         concept_author, concept_description, seed_supports, seed_passes, created_at, updated_at)
-      values (${t.slug}, ${t.title}, ${t.category}, ${t.audiences}, ${t.address}, ${t.summary}, ${t.proposal}, ${t.photo}, ${t.stage},
+      values (${t.slug}, ${t.title}, ${t.category}, ${t.audiences}, ${t.address}, ${hood(t).name}, ${hood(t).slug}, ${t.at[0]}, ${t.at[1]}, ${t.at[2] ?? 0}, true, ${t.summary}, ${t.proposal}, ${t.photo}, ${t.stage},
         ${t.protocol?.number ?? null}, ${t.protocol?.org ?? null}, ${t.protocol ? dateOnly(t.protocol.openedDaysAgo) : null},
         ${t.protocol?.status ?? null}, ${t.protocol?.next ?? null},
         ${t.dossier?.number ?? null}, ${t.dossier ? dateOnly(t.dossier.daysAgo) : null},
@@ -51,7 +67,7 @@ export async function seedIfEmpty() {
     if (t.stage >= 1) tl.push([Math.max(t.daysAgo - 3, 1), 'Tópico criado', 'Relatos parecidos foram reunidos.', null])
     if (t.stage >= 2 && t.dossier) tl.push([t.dossier.daysAgo, 'Dossiê gerado', `Dossiê ${t.dossier.number} com relatos, evidências e fundamentação.`, null])
     if (t.stage >= 3 && t.protocol) tl.push([t.protocol.openedDaysAgo, 'Protocolo aberto no SP156', 'O AJA abriu o pedido com o dossiê anexado.', null])
-    if (t.slug === 'piso-tatil-av-cupece') tl.push([13, 'Prefeitura respondeu', '', 'Solicitação encaminhada para vistoria técnica. Prazo estimado de 60 dias.'])
+    if (t.slug === FLAGSHIP) tl.push([13, 'Prefeitura respondeu', '', 'Solicitação encaminhada para vistoria técnica. Prazo estimado de 60 dias.'])
     if (t.stage >= 4 && t.protocol) tl.push([Math.max(t.protocol.openedDaysAgo - 40, 2), 'Intervenção aprovada', 'A prefeitura aprovou a execução.', 'Serviço incluído na programação de manutenção.'])
     if (t.stage >= 6 && t.protocol) tl.push([Math.max(t.protocol.openedDaysAgo - 160, 20), 'Obra concluída e verificada', 'Moradores que passam pelo local confirmaram a melhoria.', null])
     for (const [d, title, body, quote] of tl) {
@@ -61,8 +77,8 @@ export async function seedIfEmpty() {
     // Referências.
     const refs = [...(t.category === 'piso' || t.category === 'calcada' || t.category === 'obstaculo' ? REFS._piso : []), ...REFS._leis, ...(t.category === 'piso' || t.category === 'obstaculo' ? REFS._dados : [])]
     for (const r of refs) {
-      await sql`insert into refs (topic_id, kind, title, source, url, why, checked_by, status)
-        values (${row.id}, ${r.kind}, ${r.title}, ${r.source}, ${r.url ?? null}, ${r.why}, ${r.by}, ${r.status ?? 'conferida'})`
+      await sql`insert into refs (topic_id, kind, title, source, url, why, checked_by, status, checker_id)
+        values (${row.id}, ${r.kind}, ${r.title}, ${r.source}, ${r.url ?? null}, ${r.why}, ${r.by}, ${r.status ?? 'conferida'}, ${r.by.includes(VOLUNTEER.name) ? ana.id : null})`
     }
 
     if (t.conquest) {
@@ -72,12 +88,13 @@ export async function seedIfEmpty() {
     }
   }
 
-  await sql`insert into pendencies (topic_id, body, volunteers) values (${ids['piso-tatil-av-cupece']}, 'A subprefeitura pediu uma foto com a medida da distância entre o fim do piso e a faixa.', 3)`
+  await sql`insert into pendencies (topic_id, body, volunteers) values (${ids[FLAGSHIP]}, 'A subprefeitura pediu uma foto com a medida da distância entre o fim do piso e a faixa.', 3)`
 
   for (const r of REPORTS) {
     const t = TOPICS.find((x) => x.slug === r.topic)!
-    await sql`insert into reports (topic_id, category, format, body, caption, address, passes_by, created_at)
-      values (${ids[r.topic]}, ${t.category}, ${r.format}, ${r.body}, ${r.caption ?? ''}, ${t.address}, ${r.passes}, ${daysAgo(Math.max(t.daysAgo - 2, 0))})`
+    await sql`insert into reports (topic_id, category, format, body, caption, address, passes_by, lat, lng, heading, created_at)
+      values (${ids[r.topic]}, ${t.category}, ${r.format}, ${r.body}, ${r.caption ?? ''}, ${t.address}, ${r.passes},
+        ${r.format === 'mapa' ? t.at[0] : null}, ${r.format === 'mapa' ? t.at[1] : null}, ${r.format === 'mapa' ? t.at[2] ?? 0 : null}, ${daysAgo(Math.max(t.daysAgo - 2, 0))})`
   }
 
   for (const [slug, list] of Object.entries(COMMENTS)) {
@@ -94,13 +111,15 @@ export async function seedIfEmpty() {
   }
 
   const contribs: [string, string, string, string, number][] = [
-    ['concept', 'piso-tatil-av-cupece', 'Proposta para o piso tátil da Av. Cupecê', 'Piso direcional até a faixa e piso de alerta nos dois lados.', 4],
-    ['orientacao', 'piso-tatil-av-cupece', 'Conferiu as normas citadas no dossiê', 'NBR 16537 e NBR 9050 no tópico do piso tátil.', 7],
-    ['conquista', 'rampa-escola-estadual', 'Rampa da escola estadual', 'Ajudou a especificar a rampa que foi executada.', 60],
-    ['orientacao', 'raizes-calcada-rua-dos-ipes', 'Sugeriu canteiro maior para as árvores', 'Solução que preserva as raízes e nivela a calçada.', 3],
-    ['conquista', 'poste-meio-da-calcada', 'Poste retirado da calçada', 'Indicou a recomposição do piso após a retirada.', 120],
+    ['concept', FLAGSHIP, 'Proposta para o piso tátil da Rua Major Júlio Valente', 'Piso direcional até a faixa e piso de alerta nos dois lados.', 4],
+    ['orientacao', FLAGSHIP, 'Conferiu as normas citadas no dossiê', 'NBR 16537 e NBR 9050 no tópico do piso tátil.', 7],
+    ['conquista', 'rampa-rua-jose-flavio-pereira', 'Rampa da Rua José Flávio Pereira', 'Ajudou a especificar a rampa que foi executada.', 60],
+    ['orientacao', 'raizes-calcada-rua-miguel-fleta', 'Sugeriu canteiro maior para as árvores', 'Solução que preserva as raízes e nivela a calçada.', 3],
+    ['conquista', 'poste-rua-francisco-jose-da-costa', 'Poste retirado da calçada', 'Indicou a recomposição do piso após a retirada.', 120],
   ]
   for (const [kind, slug, title, body, d] of contribs) {
     await sql`insert into contributions (user_id, topic_id, kind, title, body, happened_on) values (${ana.id}, ${ids[slug]}, ${kind}, ${title}, ${body}, ${dateOnly(d)})`
   }
+
+  await sql`insert into meta (key, value) values ('seed_version', ${SEED_VERSION}) on conflict (key) do update set value = excluded.value`
 }

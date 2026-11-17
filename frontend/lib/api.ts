@@ -25,3 +25,10 @@ export async function getPrefs(): Promise<Prefs> {
     return DEFAULT_PREFS
   }
 }
+
+// Bairro escolhido (cookie). O piloto é o padrão.
+export const DEFAULT_BAIRRO = 'parque-doroteia'
+export async function getBairroSlug(): Promise<string> {
+  const v = (await cookies()).get('aja_bairro')?.value
+  return v && /^[a-z0-9-]{2,60}$/.test(v) ? v : DEFAULT_BAIRRO
+}

@@ -5,13 +5,15 @@ import { usePathname } from 'next/navigation'
 import type { Comment, Thread } from '@/lib/types'
 import { Icon } from './Icon'
 import { ListenButton } from './ListenButton'
+import { AudioRecorder, type Recording } from './AudioRecorder'
 
 function Body({ c }: { c: Comment }) {
-  if (c.kind === 'libras') return <div className="media" style={{ minHeight: 200 }}><span className="seal"><Icon name="hand" size={16} />{c.mediaLabel ?? 'Vídeo em Libras'}</span><span className="cap"><b>Legenda:</b> “{c.body}”</span></div>
   if (c.kind === 'audio') return (
-    <div className="card flat" style={{ padding: 12, gap: 10 }}>
-      <div className="row"><span className="iconbtn" aria-hidden="true" style={{ background: 'var(--primary)', color: 'var(--onprimary)', borderColor: 'var(--primary)' }}><Icon name="mic" /></span><span className="small muted">Comentário em áudio · {c.mediaLabel}</span></div>
-      <p className="small"><b>Transcrição:</b> “{c.body}”</p>
+    <div className="stack s8">
+      {c.media
+        ? <audio className="ev-media" src={c.media} controls preload="none" aria-label={`Áudio de ${c.author}${c.mediaLabel ? `, ${c.mediaLabel}` : ''}`} />
+        : <p className="small muted">Áudio indisponível.</p>}
+      {c.body ? <p className="small"><b>Transcrição:</b> “{c.body}”</p> : <p className="xs muted">Comentário em áudio{c.mediaLabel ? ` · ${c.mediaLabel}` : ''}, sem transcrição.</p>}
     </div>
   )
   return <p>{c.body}</p>
@@ -21,7 +23,7 @@ function Item({ c, onHelpful, onReply, children }: { c: Comment; onHelpful: (id:
   return (
     <article className="cm" aria-label={`Comentário de ${c.author}`}>
       <span className="avatar" aria-hidden="true">{c.initials}</span>
-      <div className="cm-head"><b>{c.author}</b>{c.badge && <span className={`badge ${/volunt/i.test(c.badge) ? 'green' : c.badge === 'Autora' || c.badge === 'Autor' ? 'gray' : 'blue'}`}>{c.badge}</span>}<span className="dot" aria-hidden="true">·</span><span className="small muted">{c.ago}</span></div>
+      <div className="cm-head"><b>{c.volunteerId ? <Link href={`/voluntarios/${c.volunteerId}`}>{c.author}</Link> : c.author}</b>{c.badge && <span className={`badge ${/volunt/i.test(c.badge) ? 'green' : c.badge === 'Autora' || c.badge === 'Autor' ? 'gray' : 'blue'}`}>{c.badge}</span>}<span className="dot" aria-hidden="true">·</span><span className="small muted">{c.ago}</span></div>
       <div className="cm-body"><Body c={c} /></div>
       <div className="cm-actions">
         <button className={`act${c.mineHelpful ? ' on' : ''}`} type="button" aria-pressed={c.mineHelpful} onClick={() => onHelpful(c.id)}><Icon name="up" />Útil · {c.helpful}</button>
@@ -43,10 +45,22 @@ export function Comments({ slug, initial, logged }: { slug: string; initial: Thr
   const path = usePathname()
   const total = threads.reduce((n, t) => n + 1 + t.replies.length, 0)
 
-  async function post(body: string, parentId?: string) {
-    if (!body.trim()) return false
+  const [audio, setAudio] = useState<Recording | null>(null)
+
+  async function post(body: string, parentId?: string, rec?: Recording | null) {
+    if (!body.trim() && !rec) return false
     setBusy(true); setErro('')
-    const res = await fetch(`/api/topicos/${slug}/comentarios`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body, parentId }) })
+    let res: Response
+    if (rec) {
+      const fd = new FormData()
+      fd.append('body', body.trim())
+      fd.append('duration', rec.duration)
+      if (parentId) fd.append('parentId', parentId)
+      fd.append('audio', rec.blob, `comentario.${rec.type.split('/')[1] || 'webm'}`)
+      res = await fetch(`/api/topicos/${slug}/comentarios/audio`, { method: 'POST', body: fd })
+    } else {
+      res = await fetch(`/api/topicos/${slug}/comentarios`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body, parentId }) })
+    }
     setBusy(false)
     if (!res.ok) { setErro((await res.json().catch(() => ({}))).erro ?? 'Não foi possível publicar.'); return false }
     setThreads(await res.json())
@@ -67,17 +81,16 @@ export function Comments({ slug, initial, logged }: { slug: string; initial: Thr
   return (
     <div className="stack s24">
       {logged ? (
-        <form className="card" aria-label="Escrever comentário" onSubmit={async (e) => { e.preventDefault(); const f = e.currentTarget; if (await post(String(new FormData(f).get('body') ?? ''))) f.reset() }}>
+        <form className="card" aria-label="Escrever comentário" onSubmit={async (e) => { e.preventDefault(); const f = e.currentTarget; if (await post(String(new FormData(f).get('body') ?? ''), undefined, audio)) { f.reset(); if (audio) URL.revokeObjectURL(audio.url); setAudio(null) } }}>
           <label className="h4" htmlFor="c1">Participe da conversa</label>
-          <textarea className="input" id="c1" name="body" maxLength={2000} required placeholder="Conte sua experiência, sugira uma solução ou tire uma dúvida" />
+          <textarea className="input" id="c1" name="body" maxLength={2000} required={!audio} placeholder={audio ? 'Se quiser, escreva o que disse no áudio (ajuda quem é surdo)' : 'Conte sua experiência, sugira uma solução ou tire uma dúvida'} />
           <div className="row wrapr">
-            <Link className="chip" href={`/relatar?topico=${slug}&formato=audio`}><Icon name="mic" size={16} />Áudio</Link>
-            <Link className="chip" href={`/relatar?topico=${slug}&formato=libras`}><Icon name="hand" size={16} />Vídeo em Libras</Link>
-            <Link className="chip" href={`/relatar?topico=${slug}&formato=foto`}><Icon name="camera" size={16} />Foto</Link>
+            <AudioRecorder value={audio} onChange={setAudio} />
             <span className="grow" />
             <button className="btn sm" type="submit" disabled={busy}><Icon name="send" />Publicar</button>
           </div>
           {erro && <p className="error" role="alert">{erro}</p>}
+          <p className="xs muted">Tem foto ou link do Google Maps da barreira? <Link href={`/relatar?topico=${slug}`}>Adicione como evidência</Link>.</p>
         </form>
       ) : (
         <div className="card soft"><p><b>Quer participar da conversa?</b> <Link href={`/entrar?voltar=${encodeURIComponent(path)}`}>Entre na sua conta</Link> para comentar e marcar comentários como úteis.</p></div>

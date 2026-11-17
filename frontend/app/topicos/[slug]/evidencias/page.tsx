@@ -1,13 +1,14 @@
 import Link from 'next/link'
-import { loadTopic, supportState } from '@/lib/topic'
+import { loadTopic } from '@/lib/topic'
 import { MHead } from '@/components/Shell'
 import { TopicHeader } from '@/components/TopicHeader'
 import { Icon, type IconName } from '@/components/Icon'
-import { SupportCard } from '@/components/SupportButton'
+import { TopicAction } from '@/components/TopicAction'
 import { ListenButton } from '@/components/ListenButton'
 import { AskAja } from '@/components/AskAja'
+import { OpenInMaps, StreetView } from '@/components/Place'
 
-const FMT: Record<string, [IconName, string]> = { texto: ['file', 'Texto'], audio: ['mic', 'Áudio · transcrito'], foto: ['camera', 'Foto · com descrição'], libras: ['hand', 'Vídeo em Libras · legendado'] }
+const FMT: Record<string, [IconName, string]> = { texto: ['file', 'Texto'], audio: ['mic', 'Áudio · transcrito'], foto: ['camera', 'Foto · com descrição'], libras: ['hand', 'Vídeo em Libras · legendado'], mapa: ['pin', 'Google Maps · Street View'] }
 
 export const metadata = { title: 'Evidências' }
 
@@ -28,16 +29,16 @@ export default async function Evidencias({ params }: { params: Promise<{ slug: s
                   {e.media && e.mediaType?.startsWith('image') && <img className="ev-media" src={e.media} alt={e.caption || 'Foto enviada como evidência'} />}
                   {e.media && e.mediaType?.startsWith('audio') && <audio className="ev-media" src={e.media} controls preload="none" />}
                   {e.media && e.mediaType?.startsWith('video') && <video className="ev-media" src={e.media} controls preload="none" />}
-                  {!e.media && (e.format === 'foto' || e.format === 'libras') && <div className="media" style={{ minHeight: 140 }}><span className="seal"><Icon name={FMT[e.format][0]} size={16} />{e.format === 'foto' ? 'Foto' : 'Vídeo'}</span></div>}
-                  {e.caption && <p className="small"><b>{e.format === 'foto' ? 'Descrição' : 'Legenda'}:</b> {e.caption}</p>}
-                  {e.body && <p>{e.format === 'texto' ? e.body : `“${e.body}”`}</p>}
+                  {e.format === 'mapa' && e.place && <><StreetView place={e.place} label={t.address} height={220} /><div><OpenInMaps place={e.place} street /></div></>}
+                  {e.caption && <p className="small"><b>{e.format === 'foto' || e.format === 'mapa' ? 'Descrição' : 'Legenda'}:</b> {e.caption}</p>}
+                  {e.body && <p>{e.format === 'texto' || e.format === 'mapa' ? e.body : `“${e.body}”`}</p>}
                   <div><ListenButton text={e.caption || e.body} className="btn ghost sm" /></div>
                 </article>
               ))}
             </div>
           </div>
           <aside className="stack only-d">
-            <SupportCard slug={t.slug} initial={supportState(t)} />
+            <TopicAction t={t} />
             <AskAja questions={perguntas} limit={4} />
           </aside>
         </div>

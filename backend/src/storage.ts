@@ -20,11 +20,15 @@ const EXT: Record<string, string> = {
   'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov',
 }
 
+// O navegador costuma mandar "audio/webm;codecs=opus": vale só o tipo base.
+export const baseType = (type: string) => type.split(';')[0].trim().toLowerCase()
+
 export function allowedType(type: string) {
-  return type in EXT
+  return baseType(type) in EXT
 }
 
-export async function saveFile(buffer: Buffer, type: string) {
+export async function saveFile(buffer: Buffer, rawType: string) {
+  const type = baseType(rawType)
   const key = `relatos/${randomUUID()}.${EXT[type] ?? 'bin'}`
   if (s3 && config.s3) {
     await s3.send(new PutObjectCommand({ Bucket: config.s3.bucket, Key: key, Body: buffer, ContentType: type }))

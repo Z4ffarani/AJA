@@ -2,7 +2,8 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { sql } from '../db.js'
 import { checkPassword, currentUserId, hashPassword, requireUser, setSessionCookie, signSession, COOKIE } from '../auth.js'
-import { allowedType, loadFile, saveFile } from '../storage.js'
+import { allowedType, baseType, loadFile, saveFile } from '../storage.js'
+import { placeFromMapsLink } from '../maps.js'
 import { buildDossier } from '../pdf.js'
 
 const STAGES = ['Relatado', 'Tópico', 'Dossiê', 'Protocolo', 'Em execução', 'Verificado']
@@ -59,7 +60,8 @@ function shape(t: any) {
   return {
     id: t.id, slug: t.slug, title: t.title, category: t.category, categoryLabel: CATEGORY[t.category] ?? t.category,
     audiences: (t.audiences as string[]).map((a) => AUDIENCE[a] ?? a),
-    address: t.address, neighborhood: t.neighborhood,
+    address: t.address, neighborhood: t.neighborhood, neighborhoodSlug: t.neighborhood_slug,
+    location: t.lat != null ? { lat: t.lat, lng: t.lng, heading: t.heading ?? 0 } : null, example: Boolean(t.example),
     summary: t.summary, proposal: t.proposal, photoDescription: t.photo_description,
     stage: t.stage, stageLabel: t.stage >= 6 ? 'Verificado pela comunidade' : STAGES[t.stage], stageNote: stageNote(t),
     supports: t.supports, passes: t.passes, mySupport: t.my_support === null || t.my_support === undefined ? null : { passesBy: t.my_support },
@@ -80,16 +82,18 @@ async function findTopic(slug: string, userId: string | null) {
 
 async function threads(topicId: string, userId: string | null) {
   const rows = await sql`
-    select c.*, c.seed_helpful + coalesce(h.n, 0) as helpful,
+    select c.*, u.role as author_role, c.seed_helpful + coalesce(h.n, 0) as helpful,
       ${userId ? sql`exists(select 1 from comment_helpful where comment_id = c.id and user_id = ${userId})` : sql`false`} as mine_helpful
     from comments c
+    left join users u on u.id = c.user_id
     left join (select comment_id, count(*)::int n from comment_helpful group by comment_id) h on h.comment_id = c.id
     where c.topic_id = ${topicId}
     order by c.created_at`
   const map = (c: any) => ({
     id: c.id, author: c.author_name, initials: c.author_name.split(/\s+/).map((p: string) => p[0]).join('').slice(0, 2).toUpperCase(),
     badge: c.author_badge, kind: c.kind, body: c.body, mediaLabel: c.media_label, helpful: c.helpful, mineHelpful: c.mine_helpful,
-    ago: since(c.created_at), userId: c.user_id,
+    ago: since(c.created_at), volunteerId: c.author_role === 'voluntario' ? c.user_id : null,
+    media: c.media_key ? `/api/arquivos/${c.media_key}` : null,
   })
   const top = rows.filter((c: any) => !c.parent_id)
   return top
@@ -142,23 +146,36 @@ export async function apiRoutes(app: FastifyInstance) {
   })
 
   // ── Bairro ──────────────────────────────────────────────
-  app.get('/api/bairro', async () => {
+  const hoodBySlug = async (slug?: string) => {
+    const rows = await sql`select * from neighborhoods where slug = ${slug ?? 'parque-doroteia'}`
+    return rows[0] ?? (await sql`select * from neighborhoods where pilot order by sort limit 1`)[0]
+  }
+  app.get('/api/bairros', async () => sql`
+    select b.slug, b.name, b.district, b.lat, b.lng, b.pilot,
+      count(t.id) filter (where t.stage < 6)::int as abertos, count(t.id) filter (where t.stage = 6)::int as conquistas
+    from neighborhoods b left join topics t on t.neighborhood_slug = b.slug
+    group by b.slug order by b.sort`)
+  app.get('/api/bairro', async (req) => {
+    const b = await hoodBySlug((req.query as { slug?: string }).slug)
     const [s] = await sql`select
       count(*) filter (where stage < 6)::int as abertos,
       count(*) filter (where stage between 3 and 5)::int as protocolos,
-      count(*) filter (where stage = 6)::int as conquistas
-      from topics`
-    const [p] = await sql`select count(distinct coalesce(user_id::text, id::text))::int as n from reports`
-    const [sup] = await sql`select coalesce(sum(seed_supports), 0)::int as n from topics`
-    return { ...s, participantes: 280 + p.n + Math.round(sup.n / 40) }
+      count(*) filter (where stage = 6)::int as conquistas,
+      coalesce(sum(seed_supports), 0)::int as apoios
+      from topics where neighborhood_slug = ${b.slug}`
+    const [p] = await sql`select count(distinct coalesce(r.user_id::text, r.id::text))::int as n from reports r join topics t on t.id = r.topic_id where t.neighborhood_slug = ${b.slug}`
+    const base = b.pilot ? 280 : 40
+    const { apoios, ...rest } = s
+    return { slug: b.slug, name: b.name, district: b.district, lat: b.lat, lng: b.lng, pilot: b.pilot, ...rest, participantes: base + p.n + Math.round(apoios / 40) }
   })
 
   app.get('/api/topicos', async (req) => {
-    const q = req.query as { ordem?: string; categoria?: string }
+    const q = req.query as { ordem?: string; categoria?: string; bairro?: string }
     const userId = await currentUserId(req)
     const order = q.ordem === 'recentes' ? sql`order by t.created_at desc` : sql`order by (t.stage = 6), (t.seed_supports + coalesce(s.n, 0)) desc`
-    const cat = q.categoria && q.categoria in CATEGORY ? sql`where t.category = ${q.categoria}` : sql``
-    const rows = await sql`${topicSelect(userId)} ${cat} ${order}`
+    const cat = q.categoria && q.categoria in CATEGORY ? sql`and t.category = ${q.categoria}` : sql``
+    const hood = q.bairro && q.bairro !== 'todos' ? sql`and t.neighborhood_slug = ${q.bairro}` : sql``
+    const rows = await sql`${topicSelect(userId)} where true ${cat} ${hood} ${order}`
     return rows.map(shape)
   })
 
@@ -166,12 +183,13 @@ export async function apiRoutes(app: FastifyInstance) {
     const userId = await currentUserId(req)
     const t = await findTopic((req.params as any).slug, userId)
     if (!t) return reply.code(404).send({ erro: 'Tópico não encontrado.' })
-    const reports = await sql`select id, format, body, caption, media_key, media_type, passes_by, created_at from reports where topic_id = ${t.id} order by created_at desc`
+    const reports = await sql`select id, format, body, caption, media_key, media_type, passes_by, lat, lng, heading, maps_url, created_at from reports where topic_id = ${t.id} order by created_at desc`
     const author = t.concept_author ? (await sql`select id, name, profession from users where id = ${t.concept_author}`)[0] : null
     return {
       ...shape(t),
       conceptAuthor: author,
-      evidenceList: reports.map((r: any) => ({ id: r.id, format: r.format, body: r.body, caption: r.caption, media: r.media_key ? `/api/arquivos/${r.media_key}` : null, mediaType: r.media_type, passesBy: r.passes_by, ago: since(r.created_at) })),
+      evidenceList: reports.map((r: any) => ({ id: r.id, format: r.format, body: r.body, caption: r.caption, media: r.media_key ? `/api/arquivos/${r.media_key}` : null, mediaType: r.media_type, passesBy: r.passes_by, ago: since(r.created_at),
+        place: r.lat != null ? { lat: r.lat, lng: r.lng, heading: r.heading ?? 0 } : null, mapsUrl: r.maps_url })),
     }
   })
 
@@ -219,6 +237,36 @@ export async function apiRoutes(app: FastifyInstance) {
       values (${t.id}, ${userId}, ${u.name}, ${badge}, ${parsed.data.parentId ?? null}, ${parsed.data.body})`
     return threads(t.id, userId)
   })
+  // Comentário em áudio (gravado no navegador), com transcrição opcional.
+  app.post('/api/topicos/:slug/comentarios/audio', { config: { rateLimit: { max: 10, timeWindow: '10 minutes' } } }, async (req, reply) => {
+    const userId = await requireUser(req, reply); if (!userId) return
+    const t = await findTopic((req.params as any).slug, userId)
+    if (!t) return reply.code(404).send({ erro: 'Tópico não encontrado.' })
+    const fields: Record<string, string> = {}
+    let file: { buffer: Buffer; type: string } | null = null
+    for await (const part of req.parts()) {
+      if (part.type === 'file') {
+        if (!allowedType(part.mimetype) || !baseType(part.mimetype).startsWith('audio/')) return reply.code(400).send({ erro: 'Envie um arquivo de áudio.' })
+        file = { buffer: await part.toBuffer(), type: baseType(part.mimetype) }
+      } else fields[part.fieldname] = String(part.value ?? '')
+    }
+    if (!file || file.buffer.length < 200) return reply.code(400).send({ erro: 'O áudio ficou vazio. Tente gravar de novo.' })
+    const F = z.object({ body: z.string().trim().max(2000).default(''), duration: z.string().regex(/^\d{1,2}:\d{2}$/).optional(), parentId: z.string().uuid().optional() })
+    const parsed = F.safeParse(fields)
+    if (!parsed.success) return reply.code(400).send({ erro: 'Não foi possível enviar o áudio.' })
+    if (parsed.data.parentId) {
+      const p = await sql`select 1 from comments where id = ${parsed.data.parentId} and topic_id = ${t.id} and parent_id is null`
+      if (!p.length) return reply.code(400).send({ erro: 'Conversa não encontrada.' })
+    }
+    const [u] = await sql`select name, role, profession from users where id = ${userId}`
+    const passes = await sql`select passes_by from supports where topic_id = ${t.id} and user_id = ${userId}`
+    const badge = u.role === 'voluntario' ? `${u.profession ?? 'Profissional'} voluntária` : passes[0]?.passes_by ? 'Passa por ali' : null
+    const key = await saveFile(file.buffer, file.type)
+    await sql`insert into comments (topic_id, user_id, author_name, author_badge, parent_id, kind, body, media_label, media_key, media_type)
+      values (${t.id}, ${userId}, ${u.name}, ${badge}, ${parsed.data.parentId ?? null}, 'audio', ${parsed.data.body}, ${parsed.data.duration ?? null}, ${key}, ${file.type})`
+    return threads(t.id, userId)
+  })
+
   app.put('/api/comentarios/:id/util', async (req, reply) => {
     const userId = await requireUser(req, reply); if (!userId) return
     const id = z.string().uuid().safeParse((req.params as any).id)
@@ -233,7 +281,9 @@ export async function apiRoutes(app: FastifyInstance) {
   app.get('/api/topicos/:slug/referencias', async (req, reply) => {
     const t = await findTopic((req.params as any).slug, null)
     if (!t) return reply.code(404).send({ erro: 'Tópico não encontrado.' })
-    return sql`select id, kind, title, source, url, why, checked_by, status from refs where topic_id = ${t.id} order by status, created_at`
+    return sql`select r.id, r.kind, r.title, r.source, r.url, r.why, r.checked_by, r.status, u.id as volunteer_id
+      from refs r left join users u on u.id = r.checker_id and u.role = 'voluntario'
+      where r.topic_id = ${t.id} order by r.status, r.created_at`
   })
   const NewRef = z.object({ text: z.string().trim().min(4).max(500) })
   app.post('/api/topicos/:slug/referencias', async (req, reply) => {
@@ -297,36 +347,53 @@ export async function apiRoutes(app: FastifyInstance) {
     for await (const part of req.parts()) {
       if (part.type === 'file') {
         if (!allowedType(part.mimetype)) return reply.code(400).send({ erro: 'Formato de arquivo não aceito. Envie foto, áudio ou vídeo.' })
-        file = { buffer: await part.toBuffer(), type: part.mimetype }
+        file = { buffer: await part.toBuffer(), type: baseType(part.mimetype) }
       } else fields[part.fieldname] = String(part.value ?? '')
     }
     const Report = z.object({
       category: z.enum(['piso', 'obstaculo', 'travessia', 'sinalizacao', 'comunicacao', 'calcada', 'outro']),
-      format: z.enum(['texto', 'audio', 'foto', 'libras']),
+      format: z.enum(['texto', 'audio', 'foto', 'libras', 'mapa']),
       body: z.string().trim().max(4000).default(''),
       caption: z.string().trim().max(1000).default(''),
       address: z.string().trim().min(3).max(200),
+      neighborhood: z.string().trim().max(60).default('parque-doroteia'),
+      mapsUrl: z.string().trim().max(600).default(''),
+      lat: z.coerce.number().min(-90).max(90).optional(),
+      lng: z.coerce.number().min(-180).max(180).optional(),
       passesBy: z.enum(['true', 'false']).default('false'),
     })
     const parsed = Report.safeParse(fields)
     if (!parsed.success) return reply.code(400).send({ erro: 'Diga o que é a barreira e onde fica.' })
     const r = parsed.data
-    if (!r.body && !file) return reply.code(400).send({ erro: 'Conte a barreira por texto, áudio, foto ou vídeo.' })
-    const mediaKey = file ? await saveFile(file.buffer, file.type) : null
+    const hood = await hoodBySlug(r.neighborhood)
 
-    // Junta a um tópico aberto da mesma categoria no mesmo endereço; senão, cria um tópico novo.
+    // Link do Google Maps vira evidência com a vista do local (Street View).
+    let place: { lat: number; lng: number; heading: number } | null = null
+    if (r.mapsUrl) {
+      if (!/^https:\/\/(www\.)?(google\.[a-z.]+\/maps|maps\.google\.[a-z.]+|maps\.app\.goo\.gl|goo\.gl\/maps)/i.test(r.mapsUrl)) return reply.code(400).send({ erro: 'Cole um link do Google Maps.' })
+      place = await placeFromMapsLink(r.mapsUrl)
+      if (!place) return reply.code(400).send({ erro: 'Não achamos a localização nesse link. Abra o lugar no Google Maps e copie o link de novo.' })
+    } else if (r.lat != null && r.lng != null) place = { lat: r.lat, lng: r.lng, heading: 0 }
+    if (!r.body && !file && !r.mapsUrl) return reply.code(400).send({ erro: 'Conte a barreira por texto, áudio, foto, vídeo ou link do Google Maps.' })
+    const mediaKey = file ? await saveFile(file.buffer, file.type) : null
+    const format = file ? r.format : r.mapsUrl ? 'mapa' : r.format === 'mapa' ? 'texto' : r.format
+
+    // Junta a um tópico aberto da mesma categoria, no mesmo bairro e endereço; senão, cria um tópico novo.
     const street = r.address.split(',')[0].trim()
-    const near = await sql`select id, slug from topics where category = ${r.category} and stage < 6 and address ilike ${'%' + street + '%'} limit 1`
+    const near = await sql`select id, slug from topics where category = ${r.category} and stage < 6 and neighborhood_slug = ${hood.slug} and address ilike ${'%' + street + '%'} limit 1`
     let topic = near[0]
     if (!topic) {
       const base = `${CATEGORY[r.category]} em ${street}`
       const slug = (base.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now().toString(36)).slice(0, 80)
-      ;[topic] = await sql`insert into topics (slug, title, category, audiences, address, summary, photo_description)
-        values (${slug}, ${base}, ${r.category}, ${['visual']}, ${r.address}, ${r.body || r.caption}, ${r.caption}) returning id, slug`
+      ;[topic] = await sql`insert into topics (slug, title, category, audiences, address, neighborhood, neighborhood_slug, lat, lng, heading, summary, photo_description)
+        values (${slug}, ${base}, ${r.category}, ${['visual']}, ${r.address}, ${hood.name}, ${hood.slug}, ${place?.lat ?? null}, ${place?.lng ?? null}, ${place?.heading ?? null}, ${r.body || r.caption}, ${r.caption}) returning id, slug`
       await sql`insert into timeline (topic_id, happened_on, title, body) values (${topic.id}, current_date, 'Primeiro relato', 'Relato enviado pelo AJA.')`
+    } else if (place) {
+      await sql`update topics set lat = coalesce(lat, ${place.lat}), lng = coalesce(lng, ${place.lng}), heading = coalesce(heading, ${place.heading}) where id = ${topic.id}`
     }
-    await sql`insert into reports (topic_id, user_id, category, format, body, caption, media_key, media_type, address, passes_by)
-      values (${topic.id}, ${userId}, ${r.category}, ${r.format}, ${r.body}, ${r.caption}, ${mediaKey}, ${file?.type ?? null}, ${r.address}, ${r.passesBy === 'true'})`
+    await sql`insert into reports (topic_id, user_id, category, format, body, caption, media_key, media_type, address, passes_by, lat, lng, heading, maps_url)
+      values (${topic.id}, ${userId}, ${r.category}, ${format}, ${r.body}, ${r.caption}, ${mediaKey}, ${file?.type ?? null}, ${r.address}, ${r.passesBy === 'true'},
+        ${place?.lat ?? null}, ${place?.lng ?? null}, ${place?.heading ?? null}, ${r.mapsUrl || null})`
     await sql`update topics set updated_at = now() where id = ${topic.id}`
     if (userId) {
       await sql`insert into notifications (user_id, topic_id, title) values (${userId}, ${topic.id}, ${near[0] ? 'Seu relato entrou num tópico que já existia' : 'Seu relato abriu um tópico novo'})`
@@ -339,7 +406,7 @@ export async function apiRoutes(app: FastifyInstance) {
     const key = `relatos/${(req.params as any).name}`
     const data = await loadFile(key)
     if (!data) return reply.code(404).send({ erro: 'Arquivo não encontrado.' })
-    const [r] = await sql`select media_type from reports where media_key = ${key}`
+    const [r] = await sql`select media_type from reports where media_key = ${key} union all select media_type from comments where media_key = ${key} limit 1`
     reply.header('Content-Type', r?.media_type ?? 'application/octet-stream')
     reply.header('Cache-Control', 'public, max-age=86400')
     return reply.send(data)

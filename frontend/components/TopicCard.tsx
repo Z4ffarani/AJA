@@ -1,24 +1,45 @@
 import Link from 'next/link'
-import type { Topic } from '@/lib/types'
+import { plural, type Topic } from '@/lib/types'
 import { Progress, Tags } from './Progress'
 import { VoteBox, VotePill } from './SupportButton'
+import { Icon } from './Icon'
+
+// Conquistas não pedem mais apoio: mostram a avaliação de quem passa pelo local.
+function RatingBox({ rating, count }: { rating: number; count: number }) {
+  return (
+    <div className="vote rated">
+      <div className="box" role="img" aria-label={`Avaliação ${rating.toLocaleString('pt-BR')} de 5`}>
+        <Icon name="star" className="ic" />
+        <span className="n">{rating.toLocaleString('pt-BR')}</span>
+        <span className="t">de 5</span>
+      </div>
+      <span className="aff">{plural(count, 'avaliação', 'avaliações')}</span>
+    </div>
+  )
+}
 
 export function TopicCard({ t }: { t: Topic }) {
   const initial = { supports: t.supports, passes: t.passes, mine: t.mySupport }
-  const tags = t.stage >= 6 ? [t.categoryLabel, 'Conquista'] : [t.categoryLabel, ...t.audiences]
-  const meta = t.stage >= 6
+  const done = t.stage >= 6
+  const tags = done ? [t.categoryLabel, 'Conquista'] : [t.categoryLabel, ...t.audiences]
+  const meta = done
     ? `Antes e depois disponíveis · avaliação ${t.rating.toLocaleString('pt-BR')} de 5`
-    : `${t.reports} relatos · ${t.evidences} evidências${t.libras ? ` · ${t.libras} ${t.libras > 1 ? 'vídeos' : 'vídeo'} em Libras` : ''} · atualizado ${t.updatedAgo}`
+    : `${plural(t.reports, 'relato', 'relatos')} · ${plural(t.evidences, 'evidência', 'evidências')} · atualizado ${t.updatedAgo}`
+  const href = `/topicos/${t.slug}`
   return (
-    <article className="card">
+    <article className="card" aria-labelledby={`t-${t.slug}`}>
       <div className="topic">
-        <VoteBox slug={t.slug} initial={initial} />
+        {done ? <RatingBox rating={t.rating} count={t.ratings} /> : <VoteBox slug={t.slug} initial={initial} />}
         <div className="stack s8 grow">
           <Tags list={tags} />
-          <h2 className="h3"><Link href={`/topicos/${t.slug}`} style={{ color: 'inherit', textDecoration: 'none' }}>{t.title}</Link></h2>
-          <p className="small muted">{meta} · {t.comments} comentários</p>
+          <h2 className="h3" id={`t-${t.slug}`}><Link href={href} className="tlink">{t.title}</Link></h2>
+          <p className="small muted">{t.neighborhood && <><Icon name="pin" size={16} className="c-muted" /> {t.neighborhood} · </>}{meta}</p>
           <Progress stage={t.stage} note={t.stageNote} />
-          <VotePill slug={t.slug} initial={initial} comments={t.comments} />
+          {!done && <VotePill slug={t.slug} initial={initial} />}
+          <div className="row wrapr card-foot">
+            <Link className="btn sec sm" href={href}><Icon name="arrow" />Ver projeto<span className="sr">: {t.title}</span></Link>
+            <Link className="chip" href={`${href}/comentarios`}><Icon name="chat" size={16} />{t.comments}<span className="sr"> comentários</span></Link>
+          </div>
         </div>
       </div>
     </article>

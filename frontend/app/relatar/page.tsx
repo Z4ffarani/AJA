@@ -1,5 +1,5 @@
-import { api } from '@/lib/api'
-import type { Question, TopicDetail } from '@/lib/types'
+import { api, getBairroSlug } from '@/lib/api'
+import type { Bairro, Question, TopicDetail } from '@/lib/types'
 import { MHead } from '@/components/Shell'
 import { ReportForm } from '@/components/ReportForm'
 import { Icon } from '@/components/Icon'
@@ -9,9 +9,11 @@ export const metadata = { title: 'Relatar barreira' }
 
 export default async function Relatar({ searchParams }: { searchParams: Promise<{ topico?: string; formato?: string }> }) {
   const sp = await searchParams
-  const [perguntas, topic] = await Promise.all([
+  const [perguntas, topic, bairros, bairro] = await Promise.all([
     api<Question[]>('/api/perguntas?contextos=relatar,privacidade'),
     sp.topico ? api<TopicDetail>(`/api/topicos/${encodeURIComponent(sp.topico)}`, { allow404: true }).catch(() => null) : Promise.resolve(null),
+    api<Bairro[]>('/api/bairros'),
+    getBairroSlug(),
   ])
   const t = topic && 'slug' in topic ? topic : null
   return (
@@ -19,7 +21,7 @@ export default async function Relatar({ searchParams }: { searchParams: Promise<
       <MHead back={t ? `/topicos/${t.slug}` : '/'} title={t ? 'Adicionar evidência' : 'Relatar barreira'} />
       <main className="wrap" id="conteudo">
         <div className="grid">
-          <ReportForm topic={t ? { slug: t.slug, title: t.title, category: t.category, address: t.address } : null} format={sp.formato} />
+          <ReportForm topic={t ? { slug: t.slug, title: t.title, category: t.category, address: t.address, neighborhoodSlug: t.neighborhoodSlug } : null} format={sp.formato} bairros={bairros.map((b) => ({ slug: b.slug, name: b.name }))} bairro={bairro} />
           <aside className="stack" aria-label="Depois do relato">
             <section className="card"><h2 className="ch"><Icon name="clock" />O que acontece depois</h2>
               <ol className="tl" style={{ margin: 0, padding: 0, listStyle: 'none' }}>

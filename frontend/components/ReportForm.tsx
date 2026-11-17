@@ -7,7 +7,8 @@ const CATS: [string, IconName, string][] = [['piso', 'piso', 'Piso tátil interr
 const FMT: [string, IconName, string, string][] = [['texto', 'file', 'Escrever', 'Texto livre, do tamanho que quiser'], ['audio', 'mic', 'Falar', 'Gravação de voz; o AJA transcreve'], ['foto', 'camera', 'Foto ou vídeo', 'O AJA descreve a imagem'], ['libras', 'hand', 'Vídeo em Libras', 'Gravação em Libras; o AJA legenda']]
 const STEPS = ['O que e como', 'Onde', 'Revisar']
 
-type Topic = { slug: string; title: string; category: string; address: string } | null
+type Topic = { slug: string; title: string; category: string; address: string; neighborhoodSlug: string } | null
+type Hood = { slug: string; name: string }
 
 function Opt({ icon, title, sub, on, onClick }: { icon: IconName; title: string; sub?: string; on: boolean; onClick: () => void }) {
   return (
@@ -18,7 +19,7 @@ function Opt({ icon, title, sub, on, onClick }: { icon: IconName; title: string;
   )
 }
 
-export function ReportForm({ topic, format: initialFormat }: { topic: Topic; format?: string }) {
+export function ReportForm({ topic, format: initialFormat, bairros, bairro: initialBairro }: { topic: Topic; format?: string; bairros: Hood[]; bairro: string }) {
   const router = useRouter()
   const [step, setStep] = useState(0)
   const [category, setCategory] = useState(topic?.category ?? '')
@@ -27,6 +28,9 @@ export function ReportForm({ topic, format: initialFormat }: { topic: Topic; for
   const [caption, setCaption] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [address, setAddress] = useState(topic?.address ?? '')
+  const [bairro, setBairro] = useState(topic?.neighborhoodSlug ?? initialBairro)
+  const [mapsUrl, setMapsUrl] = useState('')
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [passes, setPasses] = useState(true)
   const [erro, setErro] = useState('')
   const [sending, setSending] = useState(false)
@@ -56,7 +60,7 @@ export function ReportForm({ topic, format: initialFormat }: { topic: Topic; for
   function locate() {
     if (!navigator.geolocation) { setErro('Seu aparelho não informou a localização. Escreva um ponto de referência.'); return }
     navigator.geolocation.getCurrentPosition(
-      (p) => setAddress(`Localização do aparelho (${p.coords.latitude.toFixed(5)}, ${p.coords.longitude.toFixed(5)})`),
+      (p) => { setCoords({ lat: p.coords.latitude, lng: p.coords.longitude }); if (!address.trim()) setAddress(`Localização do aparelho (${p.coords.latitude.toFixed(5)}, ${p.coords.longitude.toFixed(5)})`) },
       () => setErro('Não foi possível obter a localização. Escreva um ponto de referência.'),
     )
   }
@@ -69,6 +73,7 @@ export function ReportForm({ topic, format: initialFormat }: { topic: Topic; for
       if (format !== 'texto' && !file && !body.trim()) return setErro(format === 'audio' ? 'Grave ou envie um áudio.' : 'Envie uma foto ou um vídeo.')
     }
     if (step === 1 && address.trim().length < 3) return setErro('Diga onde fica a barreira.')
+    if (step === 1 && mapsUrl.trim() && !/^https:\/\/(www\.)?(google\.[a-z.]+\/maps|maps\.google\.|maps\.app\.goo\.gl|goo\.gl\/maps)/i.test(mapsUrl.trim())) return setErro('Esse não parece um link do Google Maps. Copie o link pelo botão Compartilhar do Google Maps.')
     setStep(step + 1)
   }
 
@@ -76,7 +81,9 @@ export function ReportForm({ topic, format: initialFormat }: { topic: Topic; for
     setSending(true); setErro('')
     const fd = new FormData()
     fd.set('category', category); fd.set('format', format); fd.set('body', body); fd.set('caption', caption)
-    fd.set('address', address); fd.set('passesBy', String(passes))
+    fd.set('address', address); fd.set('passesBy', String(passes)); fd.set('neighborhood', bairro)
+    if (mapsUrl.trim()) fd.set('mapsUrl', mapsUrl.trim())
+    if (coords) { fd.set('lat', String(coords.lat)); fd.set('lng', String(coords.lng)) }
     if (file) fd.set('arquivo', file)
     const res = await fetch('/api/relatos', { method: 'POST', body: fd })
     setSending(false)
@@ -139,8 +146,17 @@ export function ReportForm({ topic, format: initialFormat }: { topic: Topic; for
       {step === 1 && (
         <div className="stack">
           <h2 className="h3">Onde fica?</h2>
-          <button type="button" className="btn sec" style={{ alignSelf: 'flex-start' }} onClick={locate}><Icon name="pin" />Usar minha localização</button>
-          <div className="field"><label htmlFor="rel-addr">Endereço ou ponto de referência</label><input className="input" id="rel-addr" value={address} onChange={(e) => setAddress(e.target.value)} maxLength={200} placeholder="Ex.: Av. Cupecê, em frente à escola" autoComplete="street-address" /></div>
+          {!topic && (
+            <div className="field"><label htmlFor="rel-bairro">Bairro</label>
+              <select className="input" id="rel-bairro" value={bairro} onChange={(e) => setBairro(e.target.value)}>
+                {bairros.map((b) => <option key={b.slug} value={b.slug}>{b.name}</option>)}
+              </select></div>
+          )}
+          <button type="button" className="btn sec" style={{ alignSelf: 'flex-start' }} onClick={locate}><Icon name="pin" />{coords ? 'Localização marcada' : 'Usar minha localização'}</button>
+          <div className="field"><label htmlFor="rel-addr">Endereço ou ponto de referência</label><input className="input" id="rel-addr" value={address} onChange={(e) => setAddress(e.target.value)} maxLength={200} placeholder="Ex.: Rua dos Calangos, perto do nº 300" autoComplete="street-address" /></div>
+          <div className="field"><label htmlFor="rel-maps">Link do Google Maps ou Street View (opcional)</label>
+            <input className="input" id="rel-maps" type="url" inputMode="url" value={mapsUrl} onChange={(e) => setMapsUrl(e.target.value)} maxLength={600} placeholder="https://maps.app.goo.gl/…" aria-describedby="rel-maps-h" />
+            <span className="small muted" id="rel-maps-h">No Google Maps, abra o lugar (ou o Street View apontando para a barreira), toque em Compartilhar e cole o link aqui. A vista do local entra como evidência.</span></div>
           <p className="small muted">Não precisa ser exato. Moradores e voluntários ajudam a confirmar o local.</p>
         </div>
       )}
@@ -151,7 +167,8 @@ export function ReportForm({ topic, format: initialFormat }: { topic: Topic; for
           <div className="kv"><span className="muted">Barreira</span><b>{topic ? topic.title : catLabel}</b></div>
           <div className="kv"><span className="muted">Formato</span><b>{fmtLabel}{file ? ` · ${file.name}` : ''}</b></div>
           {(body || caption) && <div className="kv"><span className="muted">Texto</span><b style={{ textAlign: 'right' }}>{body || caption}</b></div>}
-          <div className="kv"><span className="muted">Onde</span><b>{address}</b></div>
+          <div className="kv"><span className="muted">Onde</span><b style={{ textAlign: 'right' }}>{address} · {bairros.find((b) => b.slug === bairro)?.name}</b></div>
+          {mapsUrl.trim() && <div className="kv"><span className="muted">Google Maps</span><b>Link anexado</b></div>}
           <div className="kv"><span className="muted">Passa por ali</span><b>{passes ? 'Sim' : 'Não informado'}</b></div>
           <p className="small muted">Seu nome não vai para o dossiê. Você pode relatar sem conta; com conta, acompanha as respostas.</p>
         </div>

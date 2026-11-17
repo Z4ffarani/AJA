@@ -8,14 +8,16 @@ AJA é uma plataforma de participação cidadã que transforma relatos da comuni
 
 ## Como funciona
 
-1. **Relatar:** a pessoa conta a barreira por texto, áudio, foto ou vídeo em Libras, diz onde fica e se passa por ali.
-2. **Organizar:** relatos do mesmo tipo e no mesmo lugar são reunidos em um único tópico.
+1. **Relatar:** a pessoa conta a barreira por texto, áudio, foto ou vídeo em Libras, diz onde fica e se passa por ali. Um link do Google Maps ou do Street View vira evidência com a vista do local.
+2. **Organizar:** relatos do mesmo tipo e no mesmo lugar são reunidos em um único tópico, com mapa e Street View do endereço.
 3. **Apoiar:** um único voto, com a marcação opcional “Passo por essa barreira”, que conta como evidência. Apoio mostra mobilização, mas não é condição para a barreira ser atendida.
-4. **Conversar:** comentários organizados em conversas, com respostas recuadas e marcação de comentários úteis.
+4. **Conversar:** comentários em texto ou áudio gravado no navegador, organizados em conversas, com respostas recuadas e marcação de comentários úteis.
 5. **Fundamentar:** cada tópico reúne dados públicos (SP156), normas técnicas, leis e estudos, conferidos por voluntários.
 6. **Dossiê:** o AJA gera um PDF com texto real, legível por leitor de tela, sem dados pessoais.
 7. **Acompanhar:** protocolo, pendências, decisões e justificativas da prefeitura ficam visíveis numa linha do tempo.
-8. **Conquistas:** antes e depois, avaliações e a pergunta “A barreira continua resolvida?” mantêm a melhoria verificada ao longo do tempo.
+8. **Conquistas:** depois da obra, o apoio dá lugar à avaliação. Antes e depois, notas e a pergunta “A barreira continua resolvida?” mantêm a melhoria verificada ao longo do tempo.
+
+O piloto é o Parque Doroteia, e dois bairros vizinhos (Parque Primavera e Balneário São Francisco) mostram como o AJA cresce. A pessoa troca de bairro na página inicial. As ruas e coordenadas dos exemplos são reais; as barreiras, pessoas e protocolos são simulados e aparecem marcados como exemplo.
 
 O bloco **Pergunte ao AJA** traz respostas prontas para dúvidas comuns, organizadas por assunto (piso tátil, travessias, Libras, prefeitura, dossiê, privacidade e acessibilidade). A pessoa toca na pergunta e lê ou ouve a resposta, sem precisar digitar nada.
 
@@ -36,10 +38,10 @@ O bloco **Pergunte ao AJA** traz respostas prontas para dúvidas comuns, organiz
 ## Arquitetura
 
 ### Front-end
-Aplicação em **[Next.js](https://nextjs.org)** com App Router e componentes de servidor. As páginas buscam os dados direto no back-end pelo servidor do front, repassando a sessão do usuário, e as partes interativas (apoio, comentários, relato, preferências) ficam em componentes de cliente. Uma rota em `app/api/[...path]` repassa as chamadas do navegador para o back-end, o que mantém o cookie de sessão na mesma origem e fora do alcance de scripts. O estilo vem de um único arquivo `globals.css`, com variáveis de cor para os temas e *container queries* para computador, tablet e celular. Os ícones são da biblioteca **[Phosphor Icons](https://phosphoricons.com)**, no estilo preenchido.
+Aplicação em **[Next.js](https://nextjs.org)** com App Router e componentes de servidor. As páginas buscam os dados direto no back-end pelo servidor do front, repassando a sessão do usuário, e as partes interativas (apoio, comentários, relato, preferências) ficam em componentes de cliente. Uma rota em `app/api/[...path]` repassa as chamadas do navegador para o back-end, o que mantém o cookie de sessão na mesma origem e fora do alcance de scripts. O estilo vem de um único arquivo `globals.css`, com variáveis de cor para os temas e *container queries* para computador, tablet e celular. Os ícones são da biblioteca **[Phosphor Icons](https://phosphoricons.com)**, no estilo preenchido. O mapa do bairro usa **[Leaflet](https://leafletjs.com)** com **[OpenStreetMap](https://www.openstreetmap.org)**, e cada tópico mostra o mapa e o Street View do Google embutidos, sempre com o endereço por extenso ao lado.
 
 ### Back-end
-API em **[Fastify](https://fastify.dev)** com TypeScript. O banco **PostgreSQL** guarda tópicos, relatos, apoios, comentários, referências, linha do tempo e o repertório do Pergunte ao AJA; o esquema é aplicado na inicialização e os dados de exemplo do piloto entram quando o banco está vazio. A autenticação usa senha cifrada com *scrypt* e sessão em JWT num cookie `httpOnly`. Fotos, áudios e vídeos vão para um bucket compatível com S3 (ou para a pasta `uploads/` em desenvolvimento). O dossiê é gerado com **[PDFKit](https://pdfkit.org)** como PDF marcado, com a fonte Atkinson incorporada. As entradas são validadas com **[Zod](https://zod.dev)** e as rotas sensíveis têm limite de requisições.
+API em **[Fastify](https://fastify.dev)** com TypeScript. O banco **PostgreSQL** guarda tópicos, relatos, apoios, comentários, referências, linha do tempo e o repertório do Pergunte ao AJA; o esquema é aplicado na inicialização e os dados de exemplo do piloto são refeitos quando a versão deles muda (as contas são mantidas). A autenticação usa senha cifrada com *scrypt* e sessão em JWT num cookie `httpOnly`. Fotos, áudios e vídeos vão para um bucket compatível com S3 (ou para a pasta `uploads/` em desenvolvimento). O dossiê é gerado com **[PDFKit](https://pdfkit.org)** como PDF marcado, com a fonte Atkinson incorporada. As entradas são validadas com **[Zod](https://zod.dev)** e as rotas sensíveis têm limite de requisições.
 
 ```
 Navegador

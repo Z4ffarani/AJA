@@ -18,7 +18,7 @@ export function TopicHeader({ t, tab }: { t: Topic; tab: string }) {
         <p className="small muted only-d"><Link href="/">Início</Link> › {t.categoryLabel}</p>
         <Tags list={[t.categoryLabel, ...t.audiences, stage]} />
         <h1 className="h1">{t.title}</h1>
-        <p className="row muted"><Icon name="pin" />{t.neighborhood} · {t.address} (endereço simulado)</p>
+        <p className="row muted"><Icon name="pin" />{t.address} · {t.neighborhood}</p>
       </div>
       <nav className="tabs" aria-label="Seções do tópico">
         {tabs.map(([n, p, c]) => (

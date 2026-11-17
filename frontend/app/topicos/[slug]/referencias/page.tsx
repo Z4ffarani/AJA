@@ -1,12 +1,13 @@
-import { loadTopic, supportState } from '@/lib/topic'
+import Link from 'next/link'
+import { loadTopic } from '@/lib/topic'
 import { api } from '@/lib/api'
 import { MHead } from '@/components/Shell'
 import { TopicHeader } from '@/components/TopicHeader'
 import { Icon, type IconName } from '@/components/Icon'
-import { SupportCard } from '@/components/SupportButton'
+import { TopicAction } from '@/components/TopicAction'
 import { RefSuggest } from '@/components/RefSuggest'
 
-type Ref = { id: string; kind: string; title: string; source: string; url: string | null; why: string; checked_by: string; status: string }
+type Ref = { id: string; kind: string; title: string; source: string; url: string | null; why: string; checked_by: string; status: string; volunteer_id: string | null }
 const GROUPS: [string, string, IconName, string][] = [['dados', 'Dados públicos', 'chart', 'blue'], ['norma', 'Normas técnicas', 'ruler', 'green'], ['lei', 'Leis e documentos institucionais', 'building', 'amber'], ['estudo', 'Estudos e sugestões', 'grad', 'gray']]
 const KIND: Record<string, string> = { dados: 'Dados abertos', norma: 'Norma', lei: 'Lei', estudo: 'Estudo' }
 
@@ -37,7 +38,7 @@ export default async function Referencias({ params }: { params: Promise<{ slug: 
                           <h3 className="h4">{r.url ? <a href={r.url} target="_blank" rel="noopener noreferrer">{r.title}</a> : r.title}</h3>
                           <p className="small muted">{r.source}</p>
                           <p className="small"><b>Por que importa aqui:</b> {r.why}</p>
-                          <p className="xs muted row"><Icon name="check" size={16} />{r.checked_by}</p>
+                          <p className="xs muted row"><Icon name="check" size={16} />{r.volunteer_id ? <Link href={`/voluntarios/${r.volunteer_id}`}>{r.checked_by}</Link> : r.checked_by}</p>
                         </article>
                       ))}
                     </div>
@@ -50,7 +51,7 @@ export default async function Referencias({ params }: { params: Promise<{ slug: 
           </div>
           <aside className="stack">
             <RefSuggest slug={t.slug} />
-            <div className="only-d"><SupportCard slug={t.slug} initial={supportState(t)} /></div>
+            <div className="only-d stack"><TopicAction t={t} /></div>
           </aside>
         </div>
       </main>

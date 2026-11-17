@@ -1,11 +1,13 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { loadTopic, supportState } from '@/lib/topic'
+import { loadTopic } from '@/lib/topic'
+import { plural } from '@/lib/types'
 import { MHead } from '@/components/Shell'
 import { TopicHeader } from '@/components/TopicHeader'
 import { Icon } from '@/components/Icon'
 import { Progress } from '@/components/Progress'
-import { SupportCard, SupportFoot } from '@/components/SupportButton'
+import { TopicAction, TopicFoot } from '@/components/TopicAction'
+import { MapEmbed, OpenInMaps, StreetView } from '@/components/Place'
 import { ListenButton } from '@/components/ListenButton'
 import { LibrasButtonInline } from '@/components/LibrasInline'
 import { AskAja } from '@/components/AskAja'
@@ -20,8 +22,8 @@ export async function generateMetadata({ params }: P): Promise<Metadata> {
 
 export default async function Resumo({ params }: P) {
   const { t, perguntas } = await loadTopic((await params).slug, ['apoio'])
-  const quotes = t.evidenceList.filter((e) => e.format !== 'foto').slice(0, 2)
-  const photo = t.evidenceList.find((e) => e.format === 'foto')
+  const quotes = t.evidenceList.filter((e) => e.format !== 'foto' && e.format !== 'mapa').slice(0, 2)
+  const photo = t.evidenceList.find((e) => e.format === 'foto' && e.media && e.mediaType?.startsWith('image'))
   return (
     <>
       <MHead back="/" title="Tópico" />
@@ -29,11 +31,21 @@ export default async function Resumo({ params }: P) {
         <TopicHeader t={t} tab="Resumo" />
         <div className="grid wide">
           <div className="stack">
-            <figure className="media" style={{ minHeight: 300, margin: 0 }}>
-              {photo?.media && photo.mediaType?.startsWith('image') && <img src={photo.media} alt="" />}
-              <span className="seal"><Icon name="camera" size={16} />Foto {photo ? `1 de ${t.evidenceList.filter((e) => e.format === 'foto').length}` : 'ilustrativa'}</span>
-              <figcaption className="cap"><b>Descrição:</b> {t.photoDescription || photo?.caption || 'Sem descrição ainda.'}</figcaption>
-            </figure>
+            {t.example && <p className="notice"><Icon name="flag" size={16} /> <b>Tópico de exemplo do piloto.</b> A rua é real; a barreira, as pessoas e o protocolo são simulados.</p>}
+            {photo ? (
+              <figure className="media" style={{ minHeight: 300, margin: 0 }}>
+                <img src={photo.media!} alt="" />
+                <span className="seal"><Icon name="camera" size={16} />Foto enviada por morador(a)</span>
+                <figcaption className="cap"><b>Descrição:</b> {photo.caption || t.photoDescription || 'Sem descrição ainda.'}</figcaption>
+              </figure>
+            ) : t.location ? (
+              <figure className="stack s8" style={{ margin: 0 }}>
+                <StreetView place={t.location} label={t.address} />
+                <figcaption className="small"><b>Vista do local no Google Street View</b>, que pode ser anterior ao relato. {t.photoDescription}</figcaption>
+              </figure>
+            ) : (
+              <p className="notice"><b>Descrição:</b> {t.photoDescription || 'Sem foto ainda.'}</p>
+            )}
             <div className="row wrapr">
               <ListenButton text={`${t.title}. ${t.summary} Melhoria proposta: ${t.proposal}`} label="Ouvir resumo" />
               <LibrasButtonInline />
@@ -44,15 +56,21 @@ export default async function Resumo({ params }: P) {
               <p>{t.summary}</p>
               <p className="xs muted">Resumo feito pelo AJA a partir de {t.reports} relatos e revisado por moradores.</p>
             </section>
+            {t.location && (
+              <section className="card" aria-labelledby="onde-t">
+                <h2 className="ch" id="onde-t"><Icon name="pin" />Onde fica</h2>
+                <p>{t.address} · {t.neighborhood}, São Paulo</p>
+                <MapEmbed place={t.location} label={t.address} />
+                <div className="row wrapr"><OpenInMaps place={t.location} /><OpenInMaps place={t.location} street /></div>
+              </section>
+            )}
             {quotes.length > 0 && (
               <section className="card">
                 <h2 className="ch"><Icon name="chat" />O que as pessoas relatam</h2>
                 {quotes.map((q, i) => (
                   <div key={q.id} className="stack s8">
                     {i > 0 && <hr className="hr" />}
-                    {q.format === 'libras'
-                      ? <div className="row top"><div className="media" style={{ width: 120, minHeight: 80, flex: 'none' }}><span className="seal"><Icon name="hand" size={16} /></span></div><div className="stack s4"><p>“{q.body}”</p><span className="small muted">Vídeo em Libras, legendado{q.passesBy ? ' · passa por ali' : ''}</span></div></div>
-                      : <blockquote className="stack s4" style={{ margin: 0 }}><p>“{q.body}”</p><span className="small muted">{q.format === 'audio' ? 'Relato por áudio, transcrito' : 'Relato por texto'}{q.passesBy ? ' · passa por ali' : ''}</span></blockquote>}
+                    {<blockquote className="stack s4" style={{ margin: 0 }}><p>“{q.body}”</p><span className="small muted">{q.format === 'audio' ? 'Relato por áudio, transcrito' : 'Relato por texto'}{q.passesBy ? ' · passa por ali' : ''}</span></blockquote>}
                   </div>
                 ))}
                 <Link className="small" href={`/topicos/${t.slug}/evidencias`}>Ver todos os {t.reports} relatos</Link>
@@ -66,8 +84,8 @@ export default async function Resumo({ params }: P) {
               </section>
             )}
           </div>
-          <aside className="stack" aria-label="Apoio e andamento">
-            <SupportCard slug={t.slug} initial={supportState(t)} />
+          <aside className="stack" aria-label={t.stage >= 6 ? 'Avaliação e andamento' : 'Apoio e andamento'}>
+            <TopicAction t={t} />
             <section className="card">
               <h2 className="ch"><Icon name="building" />Andamento</h2>
               <Progress stage={t.stage} steps={false} />
@@ -76,14 +94,14 @@ export default async function Resumo({ params }: P) {
             </section>
             <section className="card">
               <h2 className="ch"><Icon name="download" />Dossiê</h2>
-              <p className="small muted">{t.dossier ? `Gerado em ${t.dossier.at} com ${t.evidences} evidências e ${t.reports} relatos, sem dados pessoais.` : `Será gerado quando o tópico reunir evidências suficientes. Já dá para ver a prévia.`}</p>
+              <p className="small muted">{t.dossier ? `Gerado em ${t.dossier.at} com ${plural(t.evidences, 'evidência', 'evidências')} e ${plural(t.reports, 'relato', 'relatos')}, sem dados pessoais.` : `Será gerado quando o tópico reunir evidências suficientes. Já dá para ver a prévia.`}</p>
               <Link className="btn sec full sm" href={`/topicos/${t.slug}/dossie`}>Ver dossiê</Link>
             </section>
             <AskAja questions={perguntas} limit={4} />
           </aside>
         </div>
       </main>
-      <SupportFoot slug={t.slug} initial={supportState(t)} />
+      <TopicFoot t={t} />
     </>
   )
 }

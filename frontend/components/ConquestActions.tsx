@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { Icon } from './Icon'
 
 export function ConquestActions({ slug, ok, notOk }: { slug: string; ok: number; notOk: number }) {
@@ -9,14 +9,15 @@ export function ConquestActions({ slug, ok, notOk }: { slug: string; ok: number;
   const [stars, setStars] = useState(0)
   const [msg, setMsg] = useState('')
   const router = useRouter()
+  const path = usePathname()
   async function call(path: string, body: object) {
     const res = await fetch(`/api/topicos/${slug}/${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-    if (res.status === 401) { router.push(`/entrar?voltar=/conquistas`); return null }
+    if (res.status === 401) { router.push(`/entrar?voltar=${encodeURIComponent(path)}`); return null }
     return res.ok ? res.json() : null
   }
   return (
-    <section className="card soft" aria-labelledby="ainda-t">
-      <h3 className="h3" id="ainda-t">A barreira continua resolvida?</h3>
+    <section className="card soft" aria-labelledby={`ainda-${slug}`}>
+      <h2 className="h3" id={`ainda-${slug}`}>A barreira continua resolvida?</h2>
       <p className="small">Passou por ali recentemente? Sua resposta mantém a conquista verificada ao longo do tempo.</p>
       <div className="row wrapr">
         <button className="btn green" type="button" aria-pressed={mine === true} onClick={async () => { const t = await call('verificacao', { stillOk: true }); if (t) { setC({ ok: t.verifiedOk, notOk: t.verifiedNotOk }); setMine(true); setMsg('Obrigado por verificar!') } }}><Icon name="check" />Sim, continua ok · {c.ok}</button>

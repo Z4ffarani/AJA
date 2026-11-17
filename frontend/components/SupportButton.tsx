@@ -40,7 +40,7 @@ export function VoteBox({ slug, initial }: { slug: string; initial: State }) {
 }
 
 // Linha de apoio do cartão (celular).
-export function VotePill({ slug, initial, comments }: { slug: string; initial: State; comments: number }) {
+export function VotePill({ slug, initial }: { slug: string; initial: State }) {
   const { s, send } = useSupport(slug, initial)
   const on = Boolean(s.mine)
   return (
@@ -49,7 +49,6 @@ export function VotePill({ slug, initial, comments }: { slug: string; initial: S
         <Icon name={on ? 'check' : 'up'} />{on ? 'Apoiando' : 'Apoiar'} · {s.supports}
       </button>
       <span className="small muted grow">{s.passes} passam por ali</span>
-      <a className="chip" href={`/topicos/${slug}/comentarios`} aria-label={`${comments} comentários`}><Icon name="chat" size={16} />{comments}</a>
     </div>
   )
 }

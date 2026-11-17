@@ -166,3 +166,36 @@ create table if not exists notifications (
 create index if not exists reports_topic_idx on reports(topic_id);
 create index if not exists comments_topic_idx on comments(topic_id);
 create index if not exists supports_user_idx on supports(user_id);
+
+-- ── v2: bairros, mapas, Street View e áudio nos comentários ──
+create table if not exists meta (key text primary key, value text not null);
+
+create table if not exists neighborhoods (
+  slug text primary key,
+  name text not null,
+  district text not null,
+  lat double precision not null,
+  lng double precision not null,
+  pilot boolean not null default false,
+  sort int not null default 0
+);
+
+alter table topics add column if not exists neighborhood_slug text not null default 'parque-doroteia';
+alter table topics add column if not exists lat double precision;
+alter table topics add column if not exists lng double precision;
+alter table topics add column if not exists heading int;
+alter table topics add column if not exists example boolean not null default false;
+
+alter table reports add column if not exists lat double precision;
+alter table reports add column if not exists lng double precision;
+alter table reports add column if not exists heading int;
+alter table reports add column if not exists maps_url text;
+alter table reports drop constraint if exists reports_format_check;
+alter table reports add constraint reports_format_check check (format in ('texto', 'audio', 'foto', 'libras', 'mapa'));
+
+alter table comments add column if not exists media_key text;
+alter table comments add column if not exists media_type text;
+
+alter table refs add column if not exists checker_id uuid references users(id) on delete set null;
+
+create index if not exists topics_neighborhood_idx on topics(neighborhood_slug);

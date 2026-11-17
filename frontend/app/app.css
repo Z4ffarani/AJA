@@ -25,20 +25,20 @@ button:disabled,.btn[aria-disabled=true]{opacity:.6;cursor:not-allowed}
 /* Botões com profundidade: a borda de baixo é mais grossa (sombra sólida).
    Ao clicar, o botão afunda e a borda de baixo fica igual à de cima. */
 .aja{--deep:color-mix(in oklab,var(--primary) 68%,#000);--greendeep:color-mix(in oklab,var(--green) 68%,#000)}
-.btn,.iconbtn:not(.ghost),.vote .box,.opt,.ask-chip,.chip,.more-replies{position:relative;transition:transform .1s ease-out,box-shadow .1s ease-out,background-color .15s,border-color .15s,color .15s,filter .15s}
+.btn,.iconbtn:not(.ghost),.vote:not(.rated) .box,.opt,.ask-chip,.chip,.more-replies{position:relative;transition:transform .1s ease-out,box-shadow .1s ease-out,background-color .15s,border-color .15s,color .15s,filter .15s}
 .btn{--d:4px;box-shadow:0 var(--d) 0 var(--deep)}
 .btn.green{box-shadow:0 var(--d) 0 var(--greendeep)}
 .btn.sec,.btn.ghost{box-shadow:0 var(--d) 0 var(--cardline)}
 .btn.apo{box-shadow:0 var(--d) 0 var(--primaryline)}
 .iconbtn:not(.ghost){--d:3px;box-shadow:0 var(--d) 0 var(--cardline)}
 .vote{gap:10px}
-.vote .box{--d:4px;box-shadow:0 var(--d) 0 var(--primaryline)}
+.vote:not(.rated) .box{--d:4px;box-shadow:0 var(--d) 0 var(--primaryline)}
 .vote.voted .box{box-shadow:0 var(--d) 0 var(--deep)}
 .opt,.ask-chip,.chip,.more-replies{--d:3px;box-shadow:0 var(--d) 0 var(--cardline)}
 .opt.on,.ask-chip.on,.chip.on{box-shadow:0 var(--d) 0 var(--primary)}
-:is(.btn,.iconbtn:not(.ghost),.vote .box,.opt,.ask-chip,.chip,.more-replies):active:not(:disabled):not([aria-disabled=true]){transform:translateY(var(--d));box-shadow:0 0 0 transparent;transition-duration:.05s}
+:is(.btn,.iconbtn:not(.ghost),.vote:not(.rated) .box,.opt,.ask-chip,.chip,.more-replies):active:not(:disabled):not([aria-disabled=true]){transform:translateY(var(--d));box-shadow:0 0 0 transparent;transition-duration:.05s}
 /* Mantém a área de clique no lugar enquanto o botão está afundado */
-:is(.btn,.iconbtn:not(.ghost),.vote .box,.opt,.ask-chip,.chip,.more-replies):active::after{content:'';position:absolute;left:0;right:0;top:calc(-1 * var(--d) - 2px);bottom:0}
+:is(.btn,.iconbtn:not(.ghost),.vote:not(.rated) .box,.opt,.ask-chip,.chip,.more-replies):active::after{content:'';position:absolute;left:0;right:0;top:calc(-1 * var(--d) - 2px);bottom:0}
 .mnav .plus{box-shadow:0 3px 0 var(--deep);transition:transform .1s ease-out,box-shadow .1s ease-out}
 .mnav a:active .plus{transform:translateY(3px);box-shadow:0 0 0 transparent}
 
@@ -58,3 +58,30 @@ button:disabled,.btn[aria-disabled=true]{opacity:.6;cursor:not-allowed}
 
 /* Quem pede menos movimento no sistema ou no painel de acessibilidade */
 @media (prefers-reduced-motion: reduce){.aja *{transition-duration:.01ms!important;animation:none!important}}
+
+/* Cartão de tópico */
+.tlink{color:inherit!important;text-decoration:none!important}
+.tlink:hover{text-decoration:underline!important;text-underline-offset:3px}
+.card-foot{gap:10px;margin-top:4px}
+.vote.rated .box{background:var(--greensoft);border-color:var(--greenline);cursor:default}
+.vote.rated .box .ic,.vote.rated .t{color:var(--green)}
+.c-muted{color:var(--muted)}
+
+/* Mapas e Street View embutidos */
+.embed{position:relative;width:100%;border-radius:12px;overflow:hidden;border:1.5px solid var(--cardline);background:var(--media)}
+.embed iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.notice .ic{vertical-align:-2px}
+.rec-box{display:flex;flex-wrap:wrap;align-items:center;gap:10px;flex-basis:100%}
+.rec-box audio{flex:1;min-width:220px}
+.btn.rec-on{background:var(--red);--deep:color-mix(in oklab,var(--red) 68%,#000)}
+/* Mapa do bairro */
+.nmap{width:100%;border-radius:12px;overflow:hidden;border:1.5px solid var(--cardline);background:var(--media);z-index:0}
+.nmap .pin{display:block;width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--primary);border:3px solid var(--surface);box-shadow:0 2px 4px rgba(0,0,0,.35)}
+.nmap .pin.done{background:var(--green)}
+.pin-pop{display:flex;flex-direction:column;gap:4px;font:inherit;font-size:.875rem}
+.pin-pop a{font-weight:700}
+.nmap .leaflet-popup-content-wrapper,.nmap .leaflet-popup-tip{background:var(--surface);color:var(--ink)}
+.nmap .leaflet-control-zoom a{color:#0F172A}
+.hood{display:inline-flex;align-items:center;gap:6px}
+.aja .nmap .leaflet-control-attribution{background:var(--surface);color:var(--ink)}
+.aja .nmap .leaflet-control-attribution a{color:var(--primary);text-decoration:underline}
