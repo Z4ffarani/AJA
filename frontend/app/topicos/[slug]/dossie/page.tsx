@@ -5,7 +5,7 @@ import { Icon } from '@/components/Icon'
 import { ListenButton } from '@/components/ListenButton'
 import { AskAja } from '@/components/AskAja'
 
-const FMT: Record<string, string> = { texto: 'texto', audio: 'áudio', foto: 'foto', libras: 'Libras' }
+const FMT: Record<string, string> = { texto: 'texto', audio: 'áudio', foto: 'foto', libras: 'Libras', mapa: 'Street View' }
 
 export const metadata = { title: 'Dossiê' }
 

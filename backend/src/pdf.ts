@@ -7,7 +7,7 @@ const fonts = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'fon
 const REGULAR = join(fonts, 'atkinson-hyperlegible-next-latin-400-normal.woff')
 const BOLD = join(fonts, 'atkinson-hyperlegible-next-latin-700-normal.woff')
 
-const FORMAT: Record<string, string> = { texto: 'texto', audio: 'áudio (transcrito)', foto: 'foto (com descrição)', libras: 'vídeo em Libras (legendado)' }
+const FORMAT: Record<string, string> = { texto: 'texto', audio: 'áudio (transcrito)', foto: 'foto (com descrição)', libras: 'vídeo em Libras (legendado)', mapa: 'ponto no Street View' }
 
 type Topic = { title: string; address: string; neighborhood: string; summary: string; proposal: string; supports: number; passes: number; categoryLabel: string; dossier: { number: string; version: number } | null; protocol: { number: string; org: string } | null }
 
