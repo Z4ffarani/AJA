@@ -59,12 +59,13 @@ export function Concept3D({ fallback }: { fallback: React.ReactNode }) {
             <button type="button" role="radio" aria-checked={mode === 'hoje'} onClick={() => choose('hoje')}>Hoje</button>
             <button type="button" role="radio" aria-checked={mode === 'proposta'} onClick={() => choose('proposta')}>Proposta</button>
           </div>
-          <span className="grow" />
+          <div className="c3d-btns" role="group" aria-label="Controles da vista">
           <button type="button" className="iconbtn" aria-label="Girar para a esquerda" onClick={() => api.current?.rotate(-20)}><Icon name="rotl" /></button>
           <button type="button" className="iconbtn" aria-label="Girar para a direita" onClick={() => api.current?.rotate(20)}><Icon name="rotate" /></button>
           <button type="button" className="iconbtn" aria-label="Aproximar" onClick={() => api.current?.zoom(0.75)}><Icon name="zoomin" /></button>
           <button type="button" className="iconbtn" aria-label="Afastar" onClick={() => api.current?.zoom(1.33)}><Icon name="zoomout" /></button>
           <button type="button" className="iconbtn" aria-label="Voltar à vista inicial" onClick={() => api.current?.reset()}><Icon name="recenter" /></button>
+          </div>
         </div>
       </div>
       <p className="xs muted">Arraste para girar · use a pinça ou a roda do mouse para aproximar.</p>

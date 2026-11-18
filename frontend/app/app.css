@@ -160,9 +160,8 @@ button:disabled,.btn[aria-disabled=true]{opacity:.6;cursor:not-allowed}
 @container (max-width: 760px){
   .c3d-tools{position:static;padding:8px;background:var(--surface);border-top:1.5px solid var(--cardline)}
 }
+.c3d-btns{display:flex;gap:4px;padding:4px;border-radius:12px;background:var(--surface);border:1.5px solid var(--cardline)}
+.c3d-btns .iconbtn{width:40px;height:40px;min-width:40px}
 @container (max-width: 760px){
-  .c3d-tools{justify-content:space-between;row-gap:8px}
-  .c3d-tools .seg{flex:1 1 100%}
-  .c3d-tools .seg button{flex:1}
-  .c3d-tools .grow{display:none}
+  .c3d-tools{justify-content:center;row-gap:8px}
 }
