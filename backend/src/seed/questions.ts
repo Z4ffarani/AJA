@@ -26,7 +26,7 @@ export const QUESTIONS: Question[] = [
   { context: 'privacidade', question: 'O que o AJA guarda sobre mim?', answer: 'Seu nome, e-mail e o que você publicou: relatos, apoios e comentários. A senha é guardada de forma cifrada. Você pode pedir a exclusão da conta e dos seus dados.' },
 
   // ── apoio ───────────────────────────────────────────────
-  { context: 'apoio', question: 'O que acontece depois que eu apoio?', answer: 'Seu apoio entra na contagem do tópico e no dossiê, mostrando quantas pessoas querem a melhoria. Você também passa a receber avisos quando a prefeitura responder.' },
+  { context: 'apoio', question: 'O que acontece depois que eu apoio?', answer: 'Seu apoio entra na contagem do tópico e no dossiê, mostrando quantas pessoas querem a melhoria. Se você marcar que passa por essa barreira, também conta como confirmação de que ela existe e ajuda o tópico a avançar até o dossiê. O tópico fica na aba Apoios, em Acompanhar.' },
   { context: 'apoio', question: 'Para que serve “Passo por essa barreira”?', answer: 'É uma marcação opcional para quem convive com a barreira. Ela conta como evidência de que o problema existe e continua lá, e ajuda a prefeitura a entender quem é afetado.' },
   { context: 'apoio', question: 'Uma barreira com poucos apoios é ignorada?', answer: 'Não. Apoio mostra mobilização, mas não é condição para uma barreira ser atendida. Uma pessoa cega que relata sozinha um obstáculo perigoso merece a mesma atenção.' },
   { context: 'apoio', question: 'Posso tirar meu apoio?', answer: 'Pode. Toque de novo no botão Apoiar para desfazer. A contagem é atualizada na hora.' },

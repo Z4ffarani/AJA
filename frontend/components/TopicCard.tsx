@@ -24,7 +24,7 @@ export function TopicCard({ t }: { t: Topic }) {
   const tags = done ? [t.categoryLabel, 'Conquista'] : [t.categoryLabel, ...t.audiences]
   const meta = done
     ? `Antes e depois disponíveis · avaliação ${t.rating.toLocaleString('pt-BR')} de 5`
-    : `${plural(t.reports, 'relato', 'relatos')} · ${plural(t.evidences, 'evidência', 'evidências')} · atualizado ${t.updatedAgo}`
+    : `${plural(t.reports, 'evidência', 'evidências')} · atualizado ${t.updatedAgo}`
   const href = `/topicos/${t.slug}`
   return (
     <article className="card" aria-labelledby={`t-${t.slug}`}>

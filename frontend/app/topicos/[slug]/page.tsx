@@ -10,7 +10,6 @@ import { Progress } from '@/components/Progress'
 import { TopicAction, TopicFoot } from '@/components/TopicAction'
 import { MapEmbed, OpenInMaps, StreetView } from '@/components/Place'
 import { ListenButton } from '@/components/ListenButton'
-import { LibrasButtonInline } from '@/components/LibrasInline'
 import { AskAja } from '@/components/AskAja'
 import { ShareButton } from '@/components/ShareButton'
 
@@ -49,13 +48,12 @@ export default async function Resumo({ params }: P) {
             )}
             <div className="row wrapr">
               <ListenButton text={`${t.title}. ${t.summary} Melhoria proposta: ${t.proposal}`} label="Ouvir resumo" />
-              <LibrasButtonInline />
               <ShareButton title={t.title} />
             </div>
             <section className="card">
               <h2 className="ch"><Icon name="file" />Resumo da demanda</h2>
               <p>{t.summary}</p>
-              <p className="xs muted">{t.example ? `Resumo montado a partir de ${plural(t.reports, 'relato', 'relatos')}.` : 'Resumo a partir do primeiro relato. No produto, os agentes do AJA reescrevem o resumo a cada relato novo.'}</p>
+              <p className="xs muted">{t.example ? `Resumo montado a partir de ${plural(t.reports, 'evidência', 'evidências')}.` : 'Resumo a partir da primeira evidência. No produto, os agentes do AJA reescrevem o resumo a cada relato novo.'}</p>
             </section>
             {t.location && (
               <section className="card" aria-labelledby="onde-t">
@@ -74,30 +72,26 @@ export default async function Resumo({ params }: P) {
                     {<blockquote className="stack s4" style={{ margin: 0 }}><p>“{q.body}”</p><span className="small muted">{q.format === 'audio' ? 'Relato por áudio' : 'Relato por texto'}{q.passesBy ? ' · passa por ali' : ''}</span></blockquote>}
                   </div>
                 ))}
-                <Link className="small" href={`/topicos/${t.slug}/evidencias`}>Ver todos os {t.reports} relatos</Link>
+                <Link className="small" href={`/topicos/${t.slug}/evidencias`}>Ver {t.reports === 1 ? 'a evidência' : `as ${t.reports} evidências`}</Link>
               </section>
             )}
             {t.proposal && (
               <section className="card soft">
                 <h2 className="ch"><Icon name="piso" />Melhoria proposta</h2>
                 <p>{t.proposal}</p>
-                <p className="small">{t.concept && <><Link href={`/topicos/${t.slug}/concept-3d`}>Ver o concept 3D</Link> · </>}<Link href={`/topicos/${t.slug}/referencias`}>Ver as referências</Link></p>
+                <p className="small"><Link href={`/topicos/${t.slug}/proposta`}>{t.concept ? 'Ver o concept 3D e as referências' : 'Ver as referências'}</Link></p>
               </section>
             )}
           </div>
           <aside className="stack" aria-label={t.stage >= 6 ? 'Avaliação e andamento' : 'Apoio e andamento'}>
             <TopicAction t={t} />
-            <section className="card">
-              <h2 className="ch"><Icon name="building" />Andamento</h2>
+            <section className="card" aria-labelledby="andamento-t">
+              <h2 className="ch" id="andamento-t"><Icon name="building" />Andamento</h2>
               <Progress stage={t.stage} steps={false} />
               {!t.example && <DossieChecklist t={t} />}
-              <p className="small muted">{t.protocol ? `Protocolo SP156 aberto há ${t.protocol.openDays} dias · ${t.protocol.org}.` : t.stageNote + '.'}</p>
+              <p className="small muted">{t.protocol ? `Protocolo SP156 aberto há ${t.protocol.openDays} dias · ${t.protocol.org}.` : t.dossier ? `Dossiê gerado em ${t.dossier.at}, sem dados pessoais.` : t.stageNote + '.'}</p>
+              {t.dossier && <Link className="btn sec full sm" href={`/topicos/${t.slug}/dossie`}><Icon name="file" />Ver dossiê</Link>}
               <Link className="btn sec full sm" href={`/topicos/${t.slug}/andamento`}>Ver andamento completo</Link>
-            </section>
-            <section className="card">
-              <h2 className="ch"><Icon name="download" />Dossiê</h2>
-              <p className="small muted">{t.dossier ? `Gerado em ${t.dossier.at} com ${plural(t.evidences, 'evidência', 'evidências')} e ${plural(t.reports, 'relato', 'relatos')}, sem dados pessoais.` : `Fica pronto quando o tópico tiver relatos de ${t.progresso.metaPessoas} pessoas, uma foto, vídeo ou Street View e o local no mapa. Já dá para ver a prévia.`}</p>
-              <Link className="btn sec full sm" href={`/topicos/${t.slug}/dossie`}>Ver dossiê</Link>
             </section>
             <AskAja questions={perguntas} limit={4} />
           </aside>

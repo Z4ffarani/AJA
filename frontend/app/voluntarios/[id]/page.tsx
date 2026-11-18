@@ -8,7 +8,7 @@ import { AskAja } from '@/components/AskAja'
 type V = { id: string; name: string; profession: string; bio: string; tags: string[]; verified: boolean; links: { label: string; url: string }[]
   counts: { orientacoes: number; concepts: number; conquistas: number; agradecimentos: number }
   contributions: { kind: string; title: string; body: string; ago: string; slug: string | null }[] }
-const KIND: Record<string, [string, IconName, string, string]> = { concept: ['Concept 3D', 'cube', 'blue', '/concept-3d'], orientacao: ['Orientação técnica', 'ruler', 'green', '/referencias'], conquista: ['Conquista', 'star', 'green', ''] }
+const KIND: Record<string, [string, IconName, string, string]> = { concept: ['Concept 3D', 'cube', 'blue', '/proposta#concept'], orientacao: ['Orientação técnica', 'ruler', 'green', '/proposta'], conquista: ['Conquista', 'star', 'green', ''] }
 
 export const metadata = { title: 'Perfil de voluntária' }
 

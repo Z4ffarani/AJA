@@ -126,13 +126,16 @@ export async function apiRoutes(app: FastifyInstance) {
   const firstName = (s: string) => s.trim().split(/\s+/)[0] ?? s
 
   // Quando um tópico avança sozinho (no protótipo, no lugar dos agentes):
-  //   Relatado → Tópico: relatos de 2 pessoas diferentes
-  //   Tópico → Dossiê: relatos de 3 pessoas, ao menos 1 evidência visual (foto, vídeo ou Street View) e o local no mapa
+  //   Relatado → Tópico: 2 pessoas diferentes relataram ou confirmaram ("passo por essa barreira")
+  //   Tópico → Dossiê: 3 pessoas, ao menos 1 evidência visual (foto, vídeo ou Street View) e o local no mapa
   // Daí em diante (protocolo, obra, verificação) depende da prefeitura e, no piloto, é simulado.
   const META = { topico: 2, pessoas: 3, visual: 1 }
   async function progress(topicId: string) {
     const [p] = await sql`select
-      (select count(distinct coalesce(user_id::text, id::text))::int from reports where topic_id = ${topicId}) as pessoas,
+      -- Pessoas que relataram ou confirmaram ("passo por essa barreira"), cada uma contada uma vez.
+      (select count(distinct k)::int from (
+        select coalesce(user_id::text, id::text) as k from reports where topic_id = ${topicId}
+        union select user_id::text from supports where topic_id = ${topicId} and passes_by) x) as pessoas,
       (select count(*)::int from reports where topic_id = ${topicId} and (format in ('foto', 'libras', 'mapa') or media_type like 'image/%' or media_type like 'video/%')) as visual,
       (select lat is not null from topics where id = ${topicId}) as local`
     return { pessoas: p.pessoas, visual: p.visual, local: Boolean(p.local), metaPessoas: META.pessoas, metaVisual: META.visual, metaTopico: META.topico }
@@ -149,8 +152,8 @@ export async function apiRoutes(app: FastifyInstance) {
       await sql`update topics set dossier_number = ${'AJA-' + String(n.n).padStart(4, '0')}, dossier_at = current_date, dossier_version = 1 where id = ${topicId}`
     }
     if (target > t.stage && !silent) {
-      const msg = target === 2 ? ['Dossiê pronto', 'O tópico reuniu relatos de 3 pessoas, evidência visual e o local no mapa. O dossiê está pronto para envio.']
-        : ['Tópico confirmado', 'Outra pessoa relatou a mesma barreira.']
+      const msg = target === 2 ? ['Dossiê pronto', 'Três pessoas relataram ou confirmaram a barreira, há evidência visual e o local no mapa. O dossiê está pronto para envio.']
+        : ['Tópico confirmado', 'Outra pessoa relatou ou confirmou a mesma barreira.']
       await sql`insert into timeline (topic_id, happened_on, title, body) values (${topicId}, current_date, ${msg[0]}, ${msg[1]})`
       for (const uid of await reportersOf(topicId))
         await sql`insert into notifications (user_id, topic_id, kind, title, link) values (${uid}, ${topicId}, 'aviso', ${target === 2 ? 'O tópico que você relatou ganhou o dossiê' : 'Outra pessoa confirmou a barreira que você relatou'}, ${target === 2 ? '/dossie' : '/evidencias'})`
@@ -263,6 +266,7 @@ export async function apiRoutes(app: FastifyInstance) {
     const before = await sql`select passes_by from supports where topic_id = ${t.id} and user_id = ${userId}`
     await sql`insert into supports (topic_id, user_id, passes_by) values (${t.id}, ${userId}, ${passesBy})
       on conflict (topic_id, user_id) do update set passes_by = excluded.passes_by`
+    await advance(t.id)
     if (!before.length) {
       const [me] = await sql`select name from users where id = ${userId}`
       await notify(await reportersOf(t.id), { actorId: userId, topicId: t.id, kind: 'apoio', title: `${firstName(me.name)} apoiou o seu relato`, body: passesBy ? 'E marcou que passa por essa barreira.' : undefined })
@@ -274,6 +278,7 @@ export async function apiRoutes(app: FastifyInstance) {
     const t = await findTopic((req.params as any).slug, userId)
     if (!t) return reply.code(404).send({ erro: 'Tópico não encontrado.' })
     await sql`delete from supports where topic_id = ${t.id} and user_id = ${userId}`
+    await advance(t.id)
     return shape(await findTopic(t.slug, userId))
   })
 

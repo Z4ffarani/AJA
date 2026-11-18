@@ -35,7 +35,7 @@ export function EvidenceActions({ ev, slug }: { ev: Ev; slug: string }) {
   if (mode === 'edit') {
     return (
       <form className="stack s8" onSubmit={(e) => { e.preventDefault(); save() }} aria-label="Editar evidência">
-        <div className="field"><label htmlFor={`ev-b-${ev.id}`}>{ev.format === 'audio' ? 'Transcrição' : ev.format === 'libras' ? 'Legenda' : 'Texto do relato'}</label>
+        <div className="field"><label htmlFor={`ev-b-${ev.id}`}>{ev.format === 'audio' ? 'Transcrição' : ev.format === 'libras' ? 'Legenda' : 'Texto'}</label>
           <textarea className="input" id={`ev-b-${ev.id}`} value={body} onChange={(e) => setBody(e.target.value)} maxLength={4000} /></div>
         {hasCaption && <div className="field"><label htmlFor={`ev-c-${ev.id}`}>Descrição da imagem</label>
           <textarea className="input" id={`ev-c-${ev.id}`} value={caption} onChange={(e) => setCaption(e.target.value)} maxLength={1000} /></div>}

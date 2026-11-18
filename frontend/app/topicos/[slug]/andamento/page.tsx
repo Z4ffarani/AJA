@@ -5,7 +5,6 @@ import { MHead } from '@/components/Shell'
 import { TopicHeader } from '@/components/TopicHeader'
 import { Icon } from '@/components/Icon'
 import { Progress } from '@/components/Progress'
-import { Toggle } from '@/components/Toggle'
 import { AskAja } from '@/components/AskAja'
 
 type Andamento = { timeline: { date: string; title: string; body: string; quote: string | null }[]; pendencies: { id: string; body: string; volunteers: number }[] }
@@ -60,9 +59,6 @@ export default async function AndamentoPage({ params }: { params: Promise<{ slug
             </section>
           </div>
           <aside className="stack">
-            <section className="card"><h2 className="ch"><Icon name="bell" />Avisos deste tópico</h2>
-              <Toggle label="E-mail" soon /><Toggle label="WhatsApp" soon />
-              <p className="xs muted">Se você relatou esta barreira, os avanços já chegam nas suas notificações do app.</p></section>
             <section className="card flat"><h2 className="ch"><Icon name="link" />Como o AJA acompanha</h2><p className="small">O AJA consulta o protocolo no SP156 e avisa a cada mudança. Decisões, prazos e justificativas da prefeitura ficam públicos aqui.</p><p className="xs muted">No piloto, a consulta ao SP156 é simulada.</p></section>
             <AskAja questions={pq} limit={4} />
           </aside>

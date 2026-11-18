@@ -22,7 +22,7 @@ export default async function Evidencias({ params }: { params: Promise<{ slug: s
         <TopicHeader t={t} tab="Evidências" />
         <div className="grid wide">
           <div className="stack">
-            <div className="row sb wrapr"><h2 className="h3">{t.evidenceList.length} {t.evidenceList.length === 1 ? 'relato ou evidência' : 'relatos e evidências'}</h2><Link className="btn sm" href={`/relatar?topico=${t.slug}`}><Icon name="plus" />Adicionar evidência</Link></div>
+            <div className="row sb wrapr"><h2 className="h3">{t.evidenceList.length} {t.evidenceList.length === 1 ? 'evidência' : 'evidências'}</h2><Link className="btn sm" href={`/relatar?topico=${t.slug}`}><Icon name="plus" />Adicionar evidência</Link></div>
             <div className="cols2">
               {t.evidenceList.map((e) => (
                 <article key={e.id} className="card">

@@ -6,7 +6,7 @@ export function DossieChecklist({ t }: { t: TopicDetail }) {
   if (t.stage >= 2) return null
   const p = t.progresso
   const items: [boolean, string][] = [
-    [p.pessoas >= p.metaPessoas, `Relatos de ${p.metaPessoas} pessoas diferentes · ${Math.min(p.pessoas, p.metaPessoas)} de ${p.metaPessoas}`],
+    [p.pessoas >= p.metaPessoas, `${p.metaPessoas} pessoas relataram ou confirmaram · ${Math.min(p.pessoas, p.metaPessoas)} de ${p.metaPessoas}`],
     [p.visual >= p.metaVisual, 'Uma foto, vídeo ou link do Street View'],
     [p.local, 'O local marcado no mapa'],
   ]

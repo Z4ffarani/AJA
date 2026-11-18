@@ -67,7 +67,7 @@ export function SupportCard({ slug, initial }: { slug: string; initial: State })
       </button>
       <label className="row top">
         <input type="checkbox" checked={passes} onChange={(e) => send({ passesBy: e.target.checked })} style={{ width: 24, height: 24, margin: '2px 0 0', accentColor: 'var(--primary)', flex: 'none' }} />
-        <span><b>Passo por essa barreira</b><br /><span className="small muted">Opcional. Conta como evidência de que a barreira existe e continua lá.</span></span>
+        <span><b>Passo por essa barreira</b><br /><span className="small muted">Opcional. Conta como confirmação de que a barreira existe e ajuda o tópico a avançar.</span></span>
       </label>
       {erro && <p className="small c-red" role="alert">{erro}</p>}
       <p className="xs muted">Apoio mostra mobilização, mas não é condição para a barreira ser atendida.</p>

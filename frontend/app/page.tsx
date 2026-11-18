@@ -40,7 +40,7 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
             <div className="stack s4">
               <h1 className="h1">{bairro.name} · Acessibilidade</h1>
               <p className="row wrapr small"><span className="hood muted"><Icon name="pin" size={16} />{bairro.district}</span>{!bairro.pilot && <span className="badge gray">Bairro de exemplo</span>}<Link className="chip" href="/bairros"><Icon name="building" size={16} />Trocar bairro</Link></p>
-              <p className="muted big">{bairro.abertos} tópicos abertos · {bairro.protocolos} protocolos em andamento · {bairro.conquistas} conquistas</p>
+              <p className="muted big">{bairro.abertos} tópicos abertos · {bairro.protocolos} protocolos em andamento · {bairro.conquistas} conquistas · {bairro.participantes} moradores participando</p>
             </div>
             <form className="search only-m" role="search" action="/">
               <Icon name="search" />
@@ -67,20 +67,7 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
             <section className="card">
               <h2 className="ch"><Icon name="pin" />Mapa do bairro</h2>
               <NeighborhoodMap center={[bairro.lat, bairro.lng]} pins={pins} label={mapLabel} />
-              <p className="xs muted">O mapa nunca é o único caminho: cada ponto também está na lista, com endereço por extenso. Azul: aberto · verde: conquista.</p>
-            </section>
-            <section className="card">
-              <h2 className="ch"><Icon name="chart" />O bairro em números</h2>
-              <div className="row"><span className="num c-primary">{bairro.abertos}</span><span className="muted">tópicos abertos</span></div>
-              <div className="row"><span className="num c-primary">{bairro.participantes}</span><span className="muted">moradores participando</span></div>
-              <div className="row"><span className="num c-primary">{bairro.conquistas}</span><span className="muted">conquistas verificadas</span></div>
-              <p className="xs muted">Ruas reais; tópicos e números simulados do piloto.</p>
-            </section>
-            <section className="card soft">
-              <h2 className="ch"><Icon name="plus" />Relate do seu jeito</h2>
-              <p>Escreva, fale, fotografe ou grave em Libras. O AJA organiza o resto.</p>
-              <div className="row wrapr"><span className="tag"><Icon name="file" size={16} />Texto</span><span className="tag"><Icon name="mic" size={16} />Áudio</span><span className="tag"><Icon name="camera" size={16} />Foto</span><span className="tag"><Icon name="hand" size={16} />Libras</span></div>
-              <Link className="btn full" href="/relatar"><Icon name="plus" />Relatar barreira</Link>
+              <p className="xs muted">O mapa nunca é o único caminho: cada ponto também está na lista, com endereço por extenso. Azul: aberto · verde: conquista. Ruas reais; tópicos e números simulados do piloto.</p>
             </section>
             <AskAja questions={perguntas} limit={5} />
           </aside>

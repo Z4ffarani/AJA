@@ -60,7 +60,7 @@ export default async function Acompanhar({ searchParams }: { searchParams: Promi
         <nav className="seg" aria-label="O que acompanhar" style={{ maxWidth: 640 }}>
           {tab('relatos', 'Meus relatos', d.relatos.length)}{tab('apoios', 'Apoios', d.apoios.length)}{tab('notificacoes', 'Notificações', null, unread)}
         </nav>
-        {sp.excluido && <p className="notice" role="status">Relato excluído. O tópico saiu junto, porque não tinha outros relatos nem participação de outras pessoas.</p>}
+        {sp.excluido && <p className="notice" role="status">Evidência excluída. O tópico saiu junto, porque não tinha outras evidências nem participação de outras pessoas.</p>}
         <div className="grid">
           <div className="stack">
             {aba === 'notificacoes' && <Notifications items={notas} />}

@@ -191,7 +191,7 @@ export function ReportForm({ topic, format: initialFormat, bairros, bairro: init
                 <label key={p.slug} className={`pick${escolha === p.slug ? ' on' : ''}`}>
                   <input type="radio" name="parecido" value={p.slug} checked={escolha === p.slug} onChange={() => setEscolha(p.slug)} />
                   <span className="stack s4"><b>{p.title}</b>
-                    <span className="small muted">{p.address}{p.distance != null ? ` · a ${p.distance < 20 ? 'menos de 20' : p.distance} m` : ''} · {p.reports} {p.reports === 1 ? 'relato' : 'relatos'}{!p.sameCategory ? ` · ${p.categoryLabel}` : ''}</span></span>
+                    <span className="small muted">{p.address}{p.distance != null ? ` · a ${p.distance < 20 ? 'menos de 20' : p.distance} m` : ''} · {p.reports} {p.reports === 1 ? 'evidência' : 'evidências'}{!p.sameCategory ? ` · ${p.categoryLabel}` : ''}</span></span>
                 </label>
               ))}
               <label className={`pick${escolha === 'novo' ? ' on' : ''}`}>
