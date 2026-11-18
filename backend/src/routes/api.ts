@@ -4,6 +4,7 @@ import { sql } from '../db.js'
 import { checkPassword, currentUserId, hashPassword, requireUser, setSessionCookie, signSession, COOKIE } from '../auth.js'
 import { allowedType, baseType, deleteFile, loadFile, saveFile } from '../storage.js'
 import { placeFromMapsLink } from '../maps.js'
+import { AUTO_JOIN_M, SUGGEST_M, distanceM, sameStreet, streetOf } from '../matching.js'
 import { buildDossier } from '../pdf.js'
 
 const STAGES = ['Relatado', 'Tópico', 'Dossiê', 'Protocolo', 'Em execução', 'Verificado']
@@ -402,6 +403,7 @@ export async function apiRoutes(app: FastifyInstance) {
       lat: z.coerce.number().min(-90).max(90).optional(),
       lng: z.coerce.number().min(-180).max(180).optional(),
       passesBy: z.enum(['true', 'false']).default('false'),
+      topic: z.string().trim().max(120).optional(),
     })
     const parsed = Report.safeParse(fields)
     if (!parsed.success) return reply.code(400).send({ erro: 'Diga o que é a barreira e onde fica.' })
@@ -419,9 +421,20 @@ export async function apiRoutes(app: FastifyInstance) {
     const mediaKey = file ? await saveFile(file.buffer, file.type) : null
     const format = file ? r.format : r.mapsUrl ? 'mapa' : r.format === 'mapa' ? 'texto' : r.format
 
-    // Junta a um tópico aberto da mesma categoria, no mesmo bairro e endereço; senão, cria um tópico novo.
+    // Evidência para um tópico escolhido pela pessoa; senão, junta a um tópico aberto da mesma categoria
+    // na mesma rua (abreviações igualadas) ou a menos de 60 m; senão, cria um tópico novo.
     const street = r.address.split(',')[0].trim()
-    const near = await sql`select id, slug from topics where category = ${r.category} and stage < 6 and neighborhood_slug = ${hood.slug} and address ilike ${'%' + street + '%'} limit 1`
+    let near: { id: string; slug: string }[] = []
+    if (r.topic) {
+      near = await sql`select id, slug from topics where slug = ${r.topic}`
+      if (!near.length) return reply.code(400).send({ erro: 'Esse tópico não existe mais. Envie como relato novo.' })
+    } else {
+      const mine = streetOf(r.address)
+      const open = await sql`select id, slug, address, lat, lng from topics where category = ${r.category} and stage < 6 and neighborhood_slug = ${hood.slug} order by updated_at desc`
+      const hit = open.find((t: any) => sameStreet(mine, streetOf(t.address)))
+        ?? (place ? open.filter((t: any) => t.lat != null).map((t: any) => ({ t, d: distanceM(place!, t) })).filter((x: any) => x.d <= AUTO_JOIN_M).sort((x: any, y: any) => x.d - y.d)[0]?.t : undefined)
+      if (hit) near = [hit]
+    }
     let topic = near[0]
     if (!topic) {
       const base = `${CATEGORY[r.category]} em ${street}`
@@ -441,6 +454,26 @@ export async function apiRoutes(app: FastifyInstance) {
       if (r.passesBy === 'true') await sql`insert into supports (topic_id, user_id, passes_by) values (${topic.id}, ${userId}, true) on conflict (topic_id, user_id) do update set passes_by = true`
     }
     return { slug: topic.slug, joined: Boolean(near[0]) }
+  })
+
+  // Tópicos que podem ser a mesma barreira: mesma rua (qualquer categoria) ou até 150 m de distância.
+  app.get('/api/relatos/parecidos', async (req) => {
+    const q = req.query as { categoria?: string; bairro?: string; endereco?: string; lat?: string; lng?: string }
+    const hood = await hoodBySlug(q.bairro)
+    const mine = streetOf(q.endereco ?? '')
+    const lat = Number(q.lat), lng = Number(q.lng)
+    const here = Number.isFinite(lat) && Number.isFinite(lng) && q.lat && q.lng ? { lat, lng } : null
+    const rows = await sql`${topicSelect(null)} where t.stage < 6 and t.neighborhood_slug = ${hood.slug}`
+    return rows
+      .map((t: any) => {
+        const d = here && t.lat != null ? Math.round(distanceM(here, t)) : null
+        const street = sameStreet(mine, streetOf(t.address))
+        return { t, d, street, same: t.category === q.categoria }
+      })
+      .filter((x: any) => x.street || (x.d != null && x.d <= SUGGEST_M))
+      .sort((a: any, b: any) => Number(b.same) - Number(a.same) || (a.d ?? 9e9) - (b.d ?? 9e9))
+      .slice(0, 4)
+      .map((x: any) => ({ ...shape(x.t), distance: x.d, sameCategory: x.same }))
   })
 
   app.get('/api/arquivos/relatos/:name', async (req, reply) => {

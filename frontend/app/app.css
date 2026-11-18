@@ -110,3 +110,7 @@ button:disabled,.btn[aria-disabled=true]{opacity:.6;cursor:not-allowed}
 .aja .notif .who{color:var(--primary)}
 .aja .notif .who,.aja .notif .who *{color:var(--primary)}
 .aja .notif.new .who,.aja .notif.new .who *{color:var(--onprimary)}
+/* Escolha entre tópicos parecidos */
+.pick{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border:1.5px solid var(--cardline);border-radius:12px;background:var(--surface);cursor:pointer}
+.pick.on{border:2px solid var(--primary);background:var(--primarysoft);padding:13.5px 15.5px}
+.pick input{width:22px;height:22px;margin:2px 0 0;accent-color:var(--primary);flex:none}

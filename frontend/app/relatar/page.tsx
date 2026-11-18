@@ -26,7 +26,7 @@ export default async function Relatar({ searchParams }: { searchParams: Promise<
             <section className="card"><h2 className="ch"><Icon name="clock" />O que acontece depois</h2>
               <ol className="tl" style={{ margin: 0, padding: 0, listStyle: 'none' }}>
                 <li className="it"><span className="rail"><span className="dot d" /><span className="ln" /></span><span className="bd"><b>Seu relato entra no mapa</b><span className="small muted">Na hora</span></span></li>
-                <li className="it"><span className="rail"><span className="dot" /><span className="ln" /></span><span className="bd"><b>O AJA junta relatos parecidos num tópico</b><span className="small muted">Quando houver evidências suficientes</span></span></li>
+                <li className="it"><span className="rail"><span className="dot" /><span className="ln" /></span><span className="bd"><b>Entra num tópico</b><span className="small muted">Num tópico parecido que você escolher ou num tópico novo</span></span></li>
                 <li className="it"><span className="rail"><span className="dot" /><span className="ln" /></span><span className="bd"><b>O tópico vira dossiê para a prefeitura</b><span className="small muted">Com protocolo no SP156</span></span></li>
                 <li className="it"><span className="rail"><span className="dot" /></span><span className="bd"><b>Você acompanha cada resposta</b><span className="small muted">Por aviso no app, e-mail ou WhatsApp</span></span></li>
               </ol></section>

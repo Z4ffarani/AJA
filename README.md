@@ -17,7 +17,7 @@ AJA é uma plataforma de participação cidadã que transforma relatos da comuni
 ## Como funciona
 
 1. **Relatar:** a pessoa conta a barreira por texto, áudio, foto ou vídeo em Libras, diz onde fica e se passa por ali. Um link do Google Maps ou do Street View vira evidência com a vista do local. Quem enviou pode editar ou excluir a própria evidência depois.
-2. **Organizar:** relatos do mesmo tipo e no mesmo lugar são reunidos em um único tópico, com mapa e Street View do endereço.
+2. **Organizar:** antes de enviar, o AJA mostra os tópicos parecidos perto do endereço (mesma rua, mesmo escrita de outro jeito, como “R.” e “Rua”, ou a até 150 m) e a pessoa pode somar o relato a um deles como evidência. Se é uma barreira nova, nasce um tópico com mapa e Street View do endereço.
 3. **Apoiar:** um único voto, com a marcação opcional “Passo por essa barreira”, que conta como evidência. Apoio mostra mobilização, mas não é condição para a barreira ser atendida.
 4. **Conversar:** comentários em texto ou áudio gravado no navegador, organizados em conversas, com respostas recuadas e marcação de comentários úteis.
 5. **Fundamentar:** cada tópico reúne dados públicos (SP156), normas técnicas, leis e estudos, conferidos por voluntários.
