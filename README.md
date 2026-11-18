@@ -1,6 +1,6 @@
 ![AJA](./assets/banner.png)
 
-**[Site](https://aja-app.up.railway.app)**
+**[Site](https://aja-app.up.railway.app) · [Pitch](https://youtu.be/N7ZLdmBYzTs)**
 
 AJA é uma plataforma de participação cidadã que transforma relatos da comunidade em propostas fundamentadas de melhoria da infraestrutura dos bairros. O piloto acontece no Parque Doroteia, em São Paulo, com foco em acessibilidade para pessoas com deficiência visual e auditiva. Moradores relatam barreiras do jeito que preferirem (texto, áudio, foto ou vídeo em Libras), a comunidade apoia e reúne evidências, e o AJA monta um dossiê para a prefeitura e acompanha o protocolo até a barreira ser removida e verificada por quem passa por ali.
 
