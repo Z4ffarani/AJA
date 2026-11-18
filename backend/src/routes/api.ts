@@ -137,7 +137,7 @@ export async function apiRoutes(app: FastifyInstance) {
       (select lat is not null from topics where id = ${topicId}) as local`
     return { pessoas: p.pessoas, visual: p.visual, local: Boolean(p.local), metaPessoas: META.pessoas, metaVisual: META.visual, metaTopico: META.topico }
   }
-  async function advance(topicId: string) {
+  async function advance(topicId: string, silent = false) {
     const [t] = await sql`select stage, example, dossier_number, title from topics where id = ${topicId}`
     if (!t || t.example || t.stage > 2) return
     const p = await progress(topicId)
@@ -148,7 +148,7 @@ export async function apiRoutes(app: FastifyInstance) {
       const [n] = await sql`select count(*)::int + 100 as n from topics where dossier_number is not null`
       await sql`update topics set dossier_number = ${'AJA-' + String(n.n).padStart(4, '0')}, dossier_at = current_date, dossier_version = 1 where id = ${topicId}`
     }
-    if (target > t.stage) {
+    if (target > t.stage && !silent) {
       const msg = target === 2 ? ['Dossiê pronto', 'O tópico reuniu relatos de 3 pessoas, evidência visual e o local no mapa. O dossiê está pronto para envio.']
         : ['Tópico confirmado', 'Outra pessoa relatou a mesma barreira.']
       await sql`insert into timeline (topic_id, happened_on, title, body) values (${topicId}, current_date, ${msg[0]}, ${msg[1]})`
@@ -156,6 +156,12 @@ export async function apiRoutes(app: FastifyInstance) {
         await sql`insert into notifications (user_id, topic_id, kind, title, link) values (${uid}, ${topicId}, 'aviso', ${target === 2 ? 'O tópico que você relatou ganhou o dossiê' : 'Outra pessoa confirmou a barreira que você relatou'}, ${target === 2 ? '/dossie' : '/evidencias'})`
     }
   }
+
+  // Ao iniciar, recalcula a etapa dos tópicos criados por relatos (sem avisar ninguém).
+  app.addHook('onReady', async () => {
+    const rows = await sql`select id from topics where not example and stage <= 2`
+    for (const r of rows) await advance(r.id, true)
+  })
 
   app.get('/health', async () => ({ status: 'ok' }))
 
