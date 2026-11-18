@@ -1,6 +1,7 @@
 // Tarefas de manutenção que rodam uma vez na inicialização, ligadas pela variável AJA_TAREFA.
 //   inventario:<nome>[,<nome>…]  → só lista as contas que batem e o que cada uma fez (não apaga nada)
 //   limpar:<id>[,<id>…]          → apaga tudo o que cada conta fez, mas mantém as contas
+//   excluir-topico:<slug>[,<slug>…] → apaga tópicos criados por relatos (nunca os de exemplo), com relatos e arquivos
 // Depois de usar, a variável deve ser removida.
 import { sql } from './db.js'
 import { deleteFile } from './storage.js'
@@ -47,6 +48,27 @@ export async function runTask() {
 
   if (kind === 'limpar' && args.length && args.every((a) => /^[0-9a-f-]{36}$/.test(a))) {
     for (const id of args) await clean(id)
+    return
+  }
+  if (kind === 'excluir-topico' && args.length) {
+    for (const slug of args) {
+      const [t] = await sql`select id, title, example from topics where slug = ${slug}`
+      if (!t) { console.log('[tarefa] excluir-topico: não encontrado', slug); continue }
+      if (t.example) { console.log('[tarefa] excluir-topico: tópico de exemplo, ignorado', slug); continue }
+      const [c] = await sql`select
+        (select count(*)::int from reports where topic_id = ${t.id}) as relatos,
+        (select count(*)::int from comments where topic_id = ${t.id}) as comentarios,
+        (select count(*)::int from supports where topic_id = ${t.id}) as apoios,
+        (select coalesce(string_agg(distinct coalesce(u.name, 'sem conta'), ', '), '') from reports r left join users u on u.id = r.user_id where r.topic_id = ${t.id}) as quem_relatou`
+      const files = (await sql`select media_key from reports where topic_id = ${t.id} and media_key is not null union all select media_key from comments where topic_id = ${t.id} and media_key is not null`).map((r: any) => r.media_key)
+      await sql.begin(async (tx: any) => {
+        await tx`delete from reports where topic_id = ${t.id}`
+        await tx`delete from notifications where topic_id = ${t.id}`
+        await tx`delete from topics where id = ${t.id}`
+      })
+      for (const k of files) await deleteFile(k)
+      console.log('[tarefa] excluir-topico', JSON.stringify({ slug, titulo: t.title, ...c, arquivos_apagados: files.length }))
+    }
     return
   }
   console.log('[tarefa] AJA_TAREFA não reconhecida; nada foi feito')
