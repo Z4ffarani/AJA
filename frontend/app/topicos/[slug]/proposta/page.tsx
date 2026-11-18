@@ -7,16 +7,11 @@ import { Icon, type IconName } from '@/components/Icon'
 import { ListenButton } from '@/components/ListenButton'
 import { RefSuggest } from '@/components/RefSuggest'
 import { AskAja } from '@/components/AskAja'
+import { Concept3D } from '@/components/Concept3D'
 
 type Ref = { id: string; kind: string; title: string; source: string; url: string | null; why: string; checked_by: string; status: string; volunteer_id: string | null }
 const GROUPS: [string, string, IconName, string][] = [['dados', 'Dados públicos', 'chart', 'blue'], ['norma', 'Normas técnicas', 'ruler', 'green'], ['lei', 'Leis e documentos institucionais', 'building', 'amber'], ['estudo', 'Estudos e sugestões', 'grad', 'gray']]
 const KIND: Record<string, string> = { dados: 'Dados abertos', norma: 'Norma', lei: 'Lei', estudo: 'Estudo' }
-const ELEMENTS: [string, string, React.CSSProperties][] = [
-  ['Piso direcional', 'Guia o caminho até a faixa', { background: '#FFC72C' }],
-  ['Piso de alerta', 'Avisa o início da travessia', { background: '#FFC72C', border: '3px dotted #9A5B00' }],
-  ['Botoeira sonora', 'Som de localização e de travessia', { background: '#1D5BD8' }],
-  ['Contagem visual', 'Para quem não ouve o bip', { background: '#F5B54A' }],
-]
 
 export const metadata = { title: 'Proposta' }
 
@@ -39,18 +34,14 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
             {t.concept && (
               <section className="stack" id="concept" aria-labelledby="concept-h">
                 <h2 className="h3 row" id="concept-h"><Icon name="cube" />Concept 3D</h2>
-                <figure className="card" style={{ margin: 0, padding: 0, overflow: 'hidden' }}>
-                  <img src="/concept-piso-tatil.svg" alt={`Ilustração em perspectiva da proposta. ${t.concept}`} style={{ width: '100%', display: 'block', aspectRatio: '1000/560', objectFit: 'cover' }} />
-                  <figcaption className="row wrapr" style={{ padding: '12px 16px' }}><span className="badge amber"><Icon name="alert" size={16} />Visualização conceitual</span><span className="small muted">Ajuda a explicar a ideia. Não é projeto executivo: a decisão técnica é da prefeitura.</span></figcaption>
-                </figure>
+                <Concept3D fallback={<figure className="card" style={{ margin: 0, padding: 0, overflow: 'hidden' }}>
+                    <img src="/concept-piso-tatil.svg" alt={`Ilustração em perspectiva da proposta. ${t.concept}`} style={{ width: '100%', display: 'block', aspectRatio: '1000/560', objectFit: 'cover' }} />
+                  </figure>} />
+                <p className="row wrapr small" style={{ margin: 0 }}><span className="badge amber"><Icon name="alert" size={16} />Visualização conceitual</span><span className="muted">Ajuda a explicar a ideia. Não é projeto executivo: a decisão técnica é da prefeitura.</span></p>
                 <section className="card">
                   <h3 className="h4">Descrição da cena</h3>
                   <p>{t.concept}</p>
                   <div><ListenButton text={`Descrição da cena. ${t.concept}`} label="Ouvir descrição" /></div>
-                  <h3 className="h4">Elementos</h3>
-                  {ELEMENTS.map(([n, d, st]) => (
-                    <div key={n} className="row"><span style={{ width: 20, height: 20, borderRadius: 5, flex: 'none', ...st }} /><span><b>{n}</b><br /><span className="small muted">{d}</span></span></div>
-                  ))}
                 </section>
               </section>
             )}

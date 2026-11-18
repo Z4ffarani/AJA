@@ -83,7 +83,7 @@ export function SupportFoot({ slug, initial }: { slug: string; initial: State })
   return (
     <div className="foot" role="region" aria-label="Ações rápidas"><div className="row">
       <button className="btn grow" type="button" aria-pressed={on} onClick={() => send(on ? null : { passesBy: passes })}><Icon name={on ? 'check' : 'up'} />{on ? 'Apoiando' : 'Apoiar'} · {s.supports}</button>
-      <button className="btn sec sm" type="button" aria-pressed={passes} onClick={() => send({ passesBy: !passes })}><Icon name={passes ? 'check' : 'piso'} size={16} />Passo por ali</button>
+      <button className="btn sec" type="button" aria-pressed={passes} onClick={() => send({ passesBy: !passes })}><Icon name={passes ? 'check' : 'piso'} />Passo por ali</button>
     </div></div>
   )
 }

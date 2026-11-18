@@ -22,7 +22,8 @@ export async function generateMetadata({ params }: P): Promise<Metadata> {
 
 export default async function Resumo({ params }: P) {
   const { t, perguntas } = await loadTopic((await params).slug, ['apoio'])
-  const quotes = t.evidenceList.filter((e) => e.format !== 'foto' && e.format !== 'mapa').slice(0, 2)
+  // As duas evidências mais recentes com texto (a lista já vem da mais nova para a mais antiga)
+  const quotes = t.evidenceList.filter((e) => e.format !== 'foto' && e.format !== 'mapa' && e.body?.trim()).slice(0, 2)
   const photo = t.evidenceList.find((e) => e.format === 'foto' && e.media && e.mediaType?.startsWith('image'))
   return (
     <>
@@ -66,10 +67,11 @@ export default async function Resumo({ params }: P) {
             {quotes.length > 0 && (
               <section className="card">
                 <h2 className="ch"><Icon name="chat" />O que as pessoas relatam</h2>
+                <p className="xs muted">As mais recentes.</p>
                 {quotes.map((q, i) => (
                   <div key={q.id} className="stack s8">
                     {i > 0 && <hr className="hr" />}
-                    {<blockquote className="stack s4" style={{ margin: 0 }}><p>“{q.body}”</p><span className="small muted">{q.format === 'audio' ? 'Relato por áudio' : 'Relato por texto'}{q.passesBy ? ' · passa por ali' : ''}</span></blockquote>}
+                    {<blockquote className="stack s4" style={{ margin: 0 }}><p>“{q.body}”</p><span className="small muted">{q.format === 'audio' ? 'Relato por áudio' : q.format === 'libras' ? 'Relato em Libras' : 'Relato por texto'} · {q.ago}{q.passesBy ? ' · passa por ali' : ''}</span></blockquote>}
                   </div>
                 ))}
                 <Link className="small" href={`/topicos/${t.slug}/evidencias`}>Ver {t.reports === 1 ? 'a evidência' : `as ${t.reports} evidências`}</Link>
