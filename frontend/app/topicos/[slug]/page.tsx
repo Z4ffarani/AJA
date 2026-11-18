@@ -62,7 +62,7 @@ export default async function Resumo({ params }: P) {
                 <h2 className="ch" id="onde-t"><Icon name="pin" />Onde fica</h2>
                 <p>{t.address} · {t.neighborhood}, São Paulo</p>
                 <MapEmbed place={t.location} label={t.address} />
-                <div className="row wrapr"><OpenInMaps place={t.location} /><OpenInMaps place={t.location} street /></div>
+                <div><OpenInMaps place={t.location} /></div>
               </section>
             )}
             {quotes.length > 0 && (

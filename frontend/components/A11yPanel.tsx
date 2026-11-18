@@ -2,9 +2,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import type { Prefs } from '@/lib/types'
+import { MAX_TEXTO, type Prefs } from '@/lib/types'
 import { Icon } from './Icon'
-import { Progress } from './Progress'
 import { Toggle } from './Toggle'
 
 export function A11yPanel({ initial, askAja }: { initial: Prefs; askAja: React.ReactNode }) {
@@ -30,7 +29,7 @@ export function A11yPanel({ initial, askAja }: { initial: Prefs; askAja: React.R
         </section>
         <section className="card"><h2 className="ch"><Icon name="text" />Tamanho do texto</h2>
           <div className="row"><span className="small" aria-hidden="true">A</span>
-            <input type="range" min={100} max={200} step={10} value={p.texto} onChange={(e) => save({ texto: Number(e.target.value) })} aria-label="Tamanho do texto" aria-valuetext={`${p.texto}%`} className="grow" style={{ accentColor: 'var(--primary)', height: 32 }} />
+            <input type="range" min={100} max={MAX_TEXTO} step={10} value={Math.min(p.texto, MAX_TEXTO)} onChange={(e) => save({ texto: Number(e.target.value) })} aria-label="Tamanho do texto" aria-valuetext={`${p.texto}%`} className="grow" style={{ accentColor: 'var(--primary)', height: 32 }} />
             <span className="h3" aria-hidden="true">A</span><b>{p.texto}%</b></div>
         </section>
         <section className="card"><h2 className="ch"><Icon name="eye" />Visão</h2>
@@ -46,7 +45,6 @@ export function A11yPanel({ initial, askAja }: { initial: Prefs; askAja: React.R
         </section>
       </div>
       <aside className="stack">
-        <section className="card soft"><h2 className="ch"><Icon name="eye" />Prévia</h2><p className="h4">Piso tátil termina antes da faixa</p><Progress stage={3} steps={false} /><span className="btn sm" style={{ alignSelf: 'flex-start' }}><Icon name="up" />Apoiar · 128</span></section>
         {askAja}
         <section className="card flat"><h2 className="ch"><Icon name="chat" />Fale com a gente</h2><p className="small">Encontrou uma barreira no próprio AJA? Conte por texto, áudio ou Libras.</p><Link className="btn sec full sm" href="/relatar">Relatar problema no AJA</Link></section>
       </aside>

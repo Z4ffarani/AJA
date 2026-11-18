@@ -38,7 +38,7 @@ export function TopicCard({ t }: { t: Topic }) {
           {!done && <VotePill slug={t.slug} initial={initial} />}
           <div className="row wrapr card-foot">
             <Link className="btn sec sm" href={href}><Icon name="arrow" />Ver projeto<span className="sr">: {t.title}</span></Link>
-            <Link className="chip" href={`${href}/comentarios`}><Icon name="chat" size={16} />{t.comments}<span className="sr"> comentários</span></Link>
+            <Link className="btn sec sm" href={`${href}/comentarios`}><Icon name="chat" />{t.comments}<span className="sr"> comentários</span></Link>
           </div>
         </div>
       </div>

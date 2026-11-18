@@ -405,6 +405,9 @@ export async function apiRoutes(app: FastifyInstance) {
     if (!t || t.stage < 5) return reply.code(404).send({ erro: 'Conquista não encontrada.' })
     await sql`delete from ratings where topic_id = ${t.id} and user_id = ${userId}`
     await sql`insert into ratings (topic_id, user_id, stars) values (${t.id}, ${userId}, ${stars})`
+    // Avaliar já é verificar: quem avalia passou por ali e viu a melhoria funcionando.
+    await sql`delete from verifications where topic_id = ${t.id} and user_id = ${userId}`
+    await sql`insert into verifications (topic_id, user_id, still_ok) values (${t.id}, ${userId}, true)`
     return shape(await findTopic(t.slug, userId))
   })
 

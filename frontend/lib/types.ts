@@ -26,3 +26,6 @@ export type Notificacao = { id: string; kind: string; title: string; body: strin
 export type Prefs = { tema: 'claro' | 'escuro' | 'auto'; texto: number; contraste: boolean; movimento: boolean; libras: boolean; voz: boolean; legendas: boolean; avisos: boolean }
 
 export const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
+
+// Tamanho máximo do texto (%). Acima disso o layout no celular começa a quebrar.
+export const MAX_TEXTO = 160

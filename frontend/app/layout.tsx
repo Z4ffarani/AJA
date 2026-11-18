@@ -5,7 +5,7 @@ import './app.css'
 import { api, getPrefs } from '@/lib/api'
 import { Bar, MNav } from '@/components/Shell'
 import { VLibras } from '@/components/Libras'
-import type { User } from '@/lib/types'
+import { MAX_TEXTO, type User } from '@/lib/types'
 
 const atkinson = localFont({
   src: [
@@ -32,7 +32,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const { usuario } = await api<{ usuario: User | null }>('/api/eu').catch(() => ({ usuario: null }))
   const classes = ['aja', prefs.tema, prefs.contraste ? 'contraste' : '', prefs.movimento ? 'sem-movimento' : ''].filter(Boolean).join(' ')
   return (
-    <html lang="pt-BR" className={atkinson.variable} style={{ fontSize: `${prefs.texto}%` }}>
+    <html lang="pt-BR" className={atkinson.variable} style={{ fontSize: `${Math.min(prefs.texto, MAX_TEXTO)}%` }}>
       <body>
         <div className={classes}>
           <a className="skip" href="#conteudo">Pular para o conteúdo</a>

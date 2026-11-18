@@ -128,3 +128,5 @@ button:disabled,.btn[aria-disabled=true]{opacity:.6;cursor:not-allowed}
 .ba-after{background:var(--greensoft);border-color:var(--greenline)}
 .seg .tabn{flex:none;padding:0 6px;font-size:.75rem;font-weight:700;border-radius:999px;box-shadow:none}
 .card.flat.ba-after{background:var(--greensoft);border-color:var(--greenline)}
+/* Menu de baixo: com texto ampliado, os rótulos crescem só até caber */
+.mnav a{flex:1 1 0;min-width:0;font-size:min(0.8125rem,14px);text-align:center}

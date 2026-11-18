@@ -3,33 +3,34 @@ import { useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { Icon } from './Icon'
 
+// Avaliar já confirma que a melhoria continua lá. "Voltou a ter problema" é o caminho à parte.
 export function ConquestActions({ slug, ok, notOk }: { slug: string; ok: number; notOk: number }) {
   const [c, setC] = useState({ ok, notOk })
-  const [mine, setMine] = useState<boolean | null>(null)
   const [stars, setStars] = useState(0)
+  const [broken, setBroken] = useState(false)
   const [msg, setMsg] = useState('')
   const router = useRouter()
-  const path = usePathname()
-  async function call(path: string, body: object) {
-    const res = await fetch(`/api/topicos/${slug}/${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-    if (res.status === 401) { router.push(`/entrar?voltar=${encodeURIComponent(path)}`); return null }
+  const here = usePathname()
+  async function call(endpoint: string, body: object) {
+    const res = await fetch(`/api/topicos/${slug}/${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    if (res.status === 401) { router.push(`/entrar?voltar=${encodeURIComponent(here)}`); return null }
     return res.ok ? res.json() : null
   }
   return (
     <section className="card soft" aria-labelledby={`ainda-${slug}`}>
-      <h2 className="h3" id={`ainda-${slug}`}>A barreira continua resolvida?</h2>
-      <p className="small">Passou por ali recentemente? Sua resposta mantém a conquista verificada ao longo do tempo.</p>
-      <div className="row wrapr">
-        <button className="btn green" type="button" aria-pressed={mine === true} onClick={async () => { const t = await call('verificacao', { stillOk: true }); if (t) { setC({ ok: t.verifiedOk, notOk: t.verifiedNotOk }); setMine(true); setMsg('Obrigado por verificar!') } }}><Icon name="check" />Sim, continua ok · {c.ok}</button>
-        <button className="btn sec" type="button" aria-pressed={mine === false} onClick={async () => { const t = await call('verificacao', { stillOk: false }); if (t) { setC({ ok: t.verifiedOk, notOk: t.verifiedNotOk }); setMine(false); setMsg('Registrado. Com mais confirmações, o tópico é reaberto.') } }}><Icon name="alert" />Voltou a ter problema · {c.notOk}</button>
-      </div>
+      <h2 className="h3" id={`ainda-${slug}`}>Passou por ali? Avalie a melhoria</h2>
+      <p className="small">Sua avaliação também confirma que a conquista continua de pé. {c.ok > 0 && <span className="muted">{c.ok} {c.ok === 1 ? 'pessoa confirmou' : 'pessoas confirmaram'}.</span>}</p>
       <fieldset className="row wrapr" style={{ border: 0, padding: 0, margin: 0 }}>
-        <legend className="small" style={{ marginBottom: 6 }}><b>Sua avaliação</b></legend>
+        <legend className="sr">Sua avaliação, de 1 a 5 estrelas</legend>
         {[1, 2, 3, 4, 5].map((s) => (
           <button key={s} type="button" className="iconbtn" aria-label={`${s} ${s === 1 ? 'estrela' : 'estrelas'}`} aria-pressed={stars === s}
-            style={{ color: s <= stars ? 'var(--amber)' : 'var(--muted)' }} onClick={async () => { const t = await call('avaliacao', { stars: s }); if (t) { setStars(s); setMsg('Avaliação registrada.') } }}><Icon name="star" /></button>
+            style={{ color: s <= stars ? 'var(--amber)' : 'var(--muted)' }}
+            onClick={async () => { const t = await call('avaliacao', { stars: s }); if (t) { setStars(s); setBroken(false); setC({ ok: t.verifiedOk, notOk: t.verifiedNotOk }); setMsg('Avaliação registrada. Obrigado por confirmar!') } }}><Icon name="star" /></button>
         ))}
       </fieldset>
+      <button className="btn sec sm" type="button" aria-pressed={broken} style={{ alignSelf: 'flex-start' }}
+        onClick={async () => { const t = await call('verificacao', { stillOk: false }); if (t) { setBroken(true); setC({ ok: t.verifiedOk, notOk: t.verifiedNotOk }); setMsg('Registrado. Com mais confirmações, o tópico é reaberto.') } }}>
+        <Icon name="alert" />Voltou a ter problema{c.notOk > 0 ? ` · ${c.notOk}` : ''}</button>
       <p className="small c-green" aria-live="polite">{msg}</p>
     </section>
   )
