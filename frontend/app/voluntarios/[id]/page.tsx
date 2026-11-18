@@ -35,12 +35,11 @@ export default async function Voluntario({ params }: { params: Promise<{ id: str
             <section className="stack"><h2 className="h3">Contribuições</h2>
               {v.contributions.map((c, i) => {
                 const k = KIND[c.kind] ?? KIND.orientacao
-                return (
-                  <Link key={i} className="card" href={c.slug ? `/topicos/${c.slug}${k[3]}` : '#'} style={{ color: 'inherit', textDecoration: 'none' }}>
-                    <span className="row"><span className={`badge ${k[2]}`}><Icon name={k[1]} size={16} />{k[0]}</span><span className="small muted">{c.ago}</span></span>
-                    <b>{c.title}</b><span className="small muted">{c.body}</span>
-                  </Link>
-                )
+                const inner = <><span className="row"><span className={`badge ${k[2]}`}><Icon name={k[1]} size={16} />{k[0]}</span><span className="small muted">{c.ago}</span></span>
+                    <b>{c.title}</b><span className="small muted">{c.body}</span></>
+                  return c.slug
+                    ? <Link key={i} className="card" href={`/topicos/${c.slug}${k[3]}`} style={{ color: 'inherit', textDecoration: 'none' }}>{inner}</Link>
+                    : <div key={i} className="card">{inner}</div>
               })}
             </section>
           </div>
@@ -49,7 +48,7 @@ export default async function Voluntario({ params }: { params: Promise<{ id: str
               {v.links.filter((l) => !l.url.includes('example.com')).map((l) => <a key={l.url} className="btn sec full sm" href={l.url} target="_blank" rel="noopener noreferrer"><Icon name={l.url.startsWith('mailto') ? 'mail' : 'link'} />{l.label}<span className="sr"> (abre em nova aba)</span></a>)}
               {v.links.some((l) => l.url.includes('example.com')) && <p className="small muted">Perfil de exemplo do piloto. Aqui aparecem o site e o contato profissional que a pessoa voluntária quiser divulgar.</p>}
               <p className="xs muted">Links de exemplo no piloto.</p></section>
-            <section className="card soft"><h2 className="ch"><Icon name="grad" />Seja voluntário</h2><p className="small">Arquitetura, engenharia, terapia ocupacional, Libras, direito: seu conhecimento ajuda a transformar relatos em propostas.</p><Link className="btn full sm" href="/entrar">Quero contribuir</Link></section>
+            <section className="card soft"><h2 className="ch"><Icon name="grad" />Seja voluntário</h2><p className="small">Arquitetura, engenharia, terapia ocupacional, Libras, direito: seu conhecimento ajuda a transformar relatos em propostas.</p><button className="btn full sm" type="button" disabled aria-disabled="true"><Icon name="grad" />Cadastro de voluntários · em breve</button></section>
             <AskAja questions={perguntas} />
           </aside>
         </div>
