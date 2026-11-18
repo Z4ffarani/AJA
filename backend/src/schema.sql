@@ -212,3 +212,14 @@ create index if not exists notifications_user_idx on notifications(user_id, read
 -- ── v4: sem avisos sobre a própria ação; títulos sem número da casa ──
 delete from notifications where kind = 'aviso' and title in ('Seu relato entrou num tópico que já existia', 'Seu relato abriu um tópico novo');
 update topics set title = regexp_replace(title, '\s+\d+[a-zA-Z]?\s*$', '') where not example and title ~ '\s\d+[a-zA-Z]?\s*$';
+
+-- ── v5: Fale com a gente (mensagens para a equipe) ──
+create table if not exists feedback (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references users(id) on delete set null,
+  body text not null default '',
+  media_key text,
+  media_type text,
+  page text,
+  created_at timestamptz not null default now()
+);

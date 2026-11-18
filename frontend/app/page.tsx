@@ -47,7 +47,7 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
               <label className="sr" htmlFor="busca-m">Buscar</label>
               <input id="busca-m" name="busca" type="search" defaultValue={sp.busca} autoFocus={sp.foco === 'busca'} placeholder="Buscar barreira, rua ou tema" style={{ border: 0, background: 'transparent', flex: 1, minWidth: 0, color: 'var(--ink)', font: 'inherit' }} />
             </form>
-            <nav className="row wrapr" aria-label="Ordenar e filtrar">
+            <nav className="row wrapr chips-scroll" aria-label="Ordenar e filtrar">
               <Link className={`chip${ordem === 'alta' && !sp.categoria ? ' on' : ''}`} href={href({ ordem: undefined, categoria: undefined })} aria-current={ordem === 'alta' && !sp.categoria ? 'true' : undefined}>Em alta</Link>
               <Link className={`chip${ordem === 'recentes' ? ' on' : ''}`} href={href({ ordem: 'recentes' })} aria-current={ordem === 'recentes' ? 'true' : undefined}>Recentes</Link>
               {FILTERS.map(([k, t]) => (

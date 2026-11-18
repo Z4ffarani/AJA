@@ -388,6 +388,27 @@ export async function apiRoutes(app: FastifyInstance) {
     return { timeline: tl.map((x: any) => ({ date: br(x.happened_on)?.slice(0, 5), title: x.title, body: x.body, quote: x.official_quote })), pendencies: pend }
   })
 
+  // Fale com a gente: mensagem em texto ou áudio para a equipe (conta opcional).
+  app.post('/api/fale-conosco', { config: { rateLimit: { max: 5, timeWindow: '10 minutes' } } }, async (req, reply) => {
+    const userId = await currentUserId(req)
+    const fields: Record<string, string> = {}
+    let file: { buffer: Buffer; type: string } | null = null
+    for await (const part of req.parts()) {
+      if (part.type === 'file') {
+        if (!allowedType(part.mimetype) || !baseType(part.mimetype).startsWith('audio/')) return reply.code(400).send({ erro: 'Envie um arquivo de áudio.' })
+        file = { buffer: await part.toBuffer(), type: baseType(part.mimetype) }
+      } else fields[part.fieldname] = String(part.value ?? '')
+    }
+    const F = z.object({ body: z.string().trim().max(3000).default(''), page: z.string().trim().max(200).optional() })
+    const parsed = F.safeParse(fields)
+    if (!parsed.success) return reply.code(400).send({ erro: 'Não foi possível enviar a mensagem.' })
+    if (file && file.buffer.length < 200) file = null
+    if (!file && parsed.data.body.length < 3) return reply.code(400).send({ erro: 'Escreva ou grave sua mensagem.' })
+    const key = file ? await saveFile(file.buffer, file.type) : null
+    await sql`insert into feedback (user_id, body, media_key, media_type, page) values (${userId}, ${parsed.data.body}, ${key}, ${file?.type ?? null}, ${parsed.data.page ?? null})`
+    return { ok: true }
+  })
+
   // Conquistas: avaliação e verificação contínua.
   app.post('/api/topicos/:slug/verificacao', async (req, reply) => {
     const userId = await requireUser(req, reply); if (!userId) return

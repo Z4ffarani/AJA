@@ -1,10 +1,10 @@
 'use client'
 import { useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { MAX_TEXTO, type Prefs } from '@/lib/types'
 import { Icon } from './Icon'
 import { Toggle } from './Toggle'
+import { FeedbackForm } from './FeedbackForm'
 
 export function A11yPanel({ initial, askAja }: { initial: Prefs; askAja: React.ReactNode }) {
   const [p, setP] = useState(initial)
@@ -34,19 +34,19 @@ export function A11yPanel({ initial, askAja }: { initial: Prefs; askAja: React.R
         </section>
         <section className="card"><h2 className="ch"><Icon name="eye" />Visão</h2>
           <Toggle label="Alto contraste" sub="Cores mais fortes e bordas em tudo" on={p.contraste} onChange={(v) => save({ contraste: v })} />
-          <Toggle label="Leitura em voz alta" sub="Botões “Ouvir” leem a página com a voz do aparelho" on={p.voz} onChange={(v) => save({ voz: v })} />
+          <Toggle label="Leitura automática" sub="Lê cada página em voz alta ao abrir. Os botões “Ouvir” já funcionam sempre." soon />
           <Toggle label="Reduzir animações" sub="Menos movimento na tela" on={p.movimento} onChange={(v) => save({ movimento: v })} />
           <p className="xs muted">Feito para funcionar com leitores de tela (NVDA, VoiceOver e TalkBack) e com o teclado.</p>
         </section>
         <section className="card" id="libras"><h2 className="ch"><Icon name="hand" />Audição</h2>
           <Toggle label="Libras (VLibras)" sub="Mostra o tradutor de Libras do governo federal em todas as páginas" on={p.libras} onChange={(v) => save({ libras: v })} />
-          <Toggle label="Legendas sempre ligadas" sub="Em vídeos e áudios" on={p.legendas} onChange={(v) => save({ legendas: v })} />
-          <Toggle label="Avisos visuais" sub="Pisca a tela e vibra em vez de tocar som" on={p.avisos} onChange={(v) => save({ avisos: v })} />
+          <Toggle label="Legendas sempre ligadas" sub="Em vídeos e áudios" soon />
+          <Toggle label="Avisos visuais" sub="Pisca a tela e vibra em vez de tocar som" soon />
         </section>
       </div>
       <aside className="stack">
         {askAja}
-        <section className="card flat"><h2 className="ch"><Icon name="chat" />Fale com a gente</h2><p className="small">Encontrou uma barreira no próprio AJA? Conte por texto, áudio ou Libras.</p><Link className="btn sec full sm" href="/relatar">Relatar problema no AJA</Link></section>
+        <FeedbackForm />
       </aside>
     </div>
   )

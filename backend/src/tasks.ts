@@ -33,6 +33,15 @@ export async function runTask() {
   if (!task) return
   const [kind, arg] = [task.split(':')[0], task.slice(task.indexOf(':') + 1).trim()]
 
+  // mensagens[:N] — lista as últimas mensagens do Fale com a gente (padrão 20).
+  if (kind === 'mensagens') {
+    const n = Math.min(Number(task.includes(':') ? arg : 20) || 20, 200)
+    const rows = await sql`select f.created_at, f.body, f.media_key, f.page, u.name from feedback f left join users u on u.id = f.user_id order by f.created_at desc limit ${n}`
+    console.log(`[tarefa] mensagens: ${rows.length}`)
+    for (const r of rows) console.log('[tarefa] mensagem', JSON.stringify({ quando: r.created_at, de: r.name ? r.name.split(' ')[0] : 'anônimo', pagina: r.page, texto: r.body, audio: r.media_key ? `https://aja-app.up.railway.app/api/arquivos/${r.media_key}` : null }))
+    return
+  }
+
   const args = arg.split(',').map((a) => a.trim()).filter(Boolean)
   if (kind === 'inventario' && args.length) {
     for (const name of args) {

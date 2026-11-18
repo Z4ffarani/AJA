@@ -130,3 +130,10 @@ button:disabled,.btn[aria-disabled=true]{opacity:.6;cursor:not-allowed}
 .card.flat.ba-after{background:var(--greensoft);border-color:var(--greenline)}
 /* Menu de baixo: com texto ampliado, os rótulos crescem só até caber */
 .mnav a{flex:1 1 0;min-width:0;font-size:min(0.8125rem,14px);text-align:center}
+.toggle.soon{opacity:.45}
+/* Filtros da home no celular: uma linha só, rolando para o lado */
+@container (max-width: 760px){
+  .chips-scroll{flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:2px 16px 6px;scroll-padding-inline:16px}
+  .chips-scroll::-webkit-scrollbar{display:none}
+  .chips-scroll .chip{flex:none;white-space:nowrap}
+}

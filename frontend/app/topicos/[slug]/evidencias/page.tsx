@@ -7,7 +7,7 @@ import { TopicAction } from '@/components/TopicAction'
 import { ListenButton } from '@/components/ListenButton'
 import { AskAja } from '@/components/AskAja'
 import { EvidenceActions } from '@/components/EvidenceActions'
-import { OpenInMaps, StreetView } from '@/components/Place'
+import { OpenInMaps } from '@/components/Place'
 
 const FMT: Record<string, [IconName, string]> = { texto: ['file', 'Texto'], audio: ['mic', 'Áudio'], foto: ['camera', 'Foto ou vídeo'], libras: ['hand', 'Vídeo em Libras'], mapa: ['pin', 'Google Maps · Street View'] }
 
@@ -30,7 +30,7 @@ export default async function Evidencias({ params }: { params: Promise<{ slug: s
                   {e.media && e.mediaType?.startsWith('image') && <img className="ev-media" src={e.media} alt={e.caption || 'Foto enviada como evidência'} />}
                   {e.media && e.mediaType?.startsWith('audio') && <audio className="ev-media" src={e.media} controls preload="none" />}
                   {e.media && e.mediaType?.startsWith('video') && <video className="ev-media" src={e.media} controls preload="none" />}
-                  {e.format === 'mapa' && e.place && <><StreetView place={e.place} label={t.address} height={220} /><div><OpenInMaps place={e.place} street /></div></>}
+                  {e.format === 'mapa' && e.place && <div><OpenInMaps place={e.place} street /></div>}
                   {e.caption && <p className="small"><b>{e.format === 'foto' || e.format === 'mapa' ? 'Descrição' : 'Legenda'}:</b> {e.caption}</p>}
                   {e.body && <p>{e.format === 'texto' || e.format === 'mapa' ? e.body : `“${e.body}”`}</p>}
                   <div><ListenButton text={e.caption || e.body} className="btn ghost sm" /></div>
