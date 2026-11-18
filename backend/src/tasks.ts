@@ -1,6 +1,6 @@
 // Tarefas de manutenção que rodam uma vez na inicialização, ligadas pela variável AJA_TAREFA.
-//   inventario:<parte do nome>  → só lista as contas que batem e o que cada uma fez (não apaga nada)
-//   limpar:<id da conta>        → apaga tudo o que a conta fez, mas mantém a conta
+//   inventario:<nome>[,<nome>…]  → só lista as contas que batem e o que cada uma fez (não apaga nada)
+//   limpar:<id>[,<id>…]          → apaga tudo o que cada conta fez, mas mantém as contas
 // Depois de usar, a variável deve ser removida.
 import { sql } from './db.js'
 import { deleteFile } from './storage.js'
@@ -32,19 +32,30 @@ export async function runTask() {
   if (!task) return
   const [kind, arg] = [task.split(':')[0], task.slice(task.indexOf(':') + 1).trim()]
 
-  if (kind === 'inventario' && arg) {
-    const users = await sql`select id, name, email, role, created_at from users where name ilike ${'%' + arg + '%'} order by created_at`
-    console.log(`[tarefa] inventario "${arg}": ${users.length} conta(s)`)
-    for (const u of users) {
-      console.log('[tarefa] conta', JSON.stringify({ id: u.id, nome: u.name, email: mask(u.email), papel: u.role, criada: u.created_at }))
-      console.log('[tarefa] atividade', JSON.stringify(await activity(u.id)))
+  const args = arg.split(',').map((a) => a.trim()).filter(Boolean)
+  if (kind === 'inventario' && args.length) {
+    for (const name of args) {
+      const users = await sql`select id, name, email, role, created_at from users where name ilike ${'%' + name + '%'} order by created_at`
+      console.log(`[tarefa] inventario "${name}": ${users.length} conta(s)`)
+      for (const u of users) {
+        console.log('[tarefa] conta', JSON.stringify({ id: u.id, nome: u.name, email: mask(u.email), papel: u.role, criada: u.created_at }))
+        console.log('[tarefa] atividade', JSON.stringify(await activity(u.id)))
+      }
     }
     return
   }
 
-  if (kind === 'limpar' && /^[0-9a-f-]{36}$/.test(arg)) {
-    const [u] = await sql`select id, name from users where id = ${arg}`
-    if (!u) { console.log('[tarefa] limpar: conta não encontrada'); return }
+  if (kind === 'limpar' && args.length && args.every((a) => /^[0-9a-f-]{36}$/.test(a))) {
+    for (const id of args) await clean(id)
+    return
+  }
+  console.log('[tarefa] AJA_TAREFA não reconhecida; nada foi feito')
+}
+
+async function clean(id: string) {
+  {
+    const [u] = await sql`select id, name from users where id = ${id}`
+    if (!u) { console.log('[tarefa] limpar: conta não encontrada', id); return }
     const antes = await activity(u.id)
     const topicIds = (await sql`select distinct topic_id from reports where user_id = ${u.id}`).map((r: any) => r.topic_id)
     const files = (await sql`select media_key from reports where user_id = ${u.id} and media_key is not null union all select media_key from comments where user_id = ${u.id} and media_key is not null`).map((r: any) => r.media_key)
@@ -70,7 +81,5 @@ export async function runTask() {
     for (const k of files) await deleteFile(k)
     const depois = await activity(u.id)
     console.log('[tarefa] limpar', JSON.stringify({ conta: u.name, id: u.id, antes, depois, arquivos_apagados: files.length }))
-    return
   }
-  console.log('[tarefa] AJA_TAREFA não reconhecida; nada foi feito')
 }
