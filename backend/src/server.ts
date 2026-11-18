@@ -14,7 +14,7 @@ const app = Fastify({ logger: { level: config.isProd ? 'info' : 'warn', redact: 
 await app.register(cors, { origin: config.allowedOrigins, credentials: true })
 await app.register(cookie)
 await app.register(rateLimit, { max: 300, timeWindow: '1 minute' })
-await app.register(multipart, { limits: { fileSize: 60 * 1024 * 1024, files: 1, fields: 10 } })
+await app.register(multipart, { limits: { fileSize: 60 * 1024 * 1024, files: 1, fields: 20 } })
 
 app.addHook('onSend', async (_req, reply) => {
   reply.header('X-Content-Type-Options', 'nosniff')

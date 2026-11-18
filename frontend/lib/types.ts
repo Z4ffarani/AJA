@@ -15,6 +15,7 @@ export type Topic = {
 }
 export type TopicDetail = Topic & {
   conceptAuthor: { id: string; name: string; profession: string } | null
+  progresso: { pessoas: number; visual: number; local: boolean; metaPessoas: number; metaVisual: number; metaTopico: number }
   evidenceList: { id: string; format: string; body: string; caption: string; media: string | null; mediaType: string | null; passesBy: boolean; ago: string; place: Place | null; mapsUrl: string | null; mine: boolean }[]
 }
 export type Comment = { id: string; author: string; initials: string; badge: string | null; kind: string; body: string; mediaLabel: string | null; helpful: number; mineHelpful: boolean; ago: string; volunteerId: string | null; media: string | null }

@@ -114,3 +114,17 @@ button:disabled,.btn[aria-disabled=true]{opacity:.6;cursor:not-allowed}
 .pick{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border:1.5px solid var(--cardline);border-radius:12px;background:var(--surface);cursor:pointer}
 .pick.on{border:2px solid var(--primary);background:var(--primarysoft);padding:13.5px 15.5px}
 .pick input{width:22px;height:22px;margin:2px 0 0;accent-color:var(--primary);flex:none}
+.ev-media.cam{transform:scaleX(-1);background:#000;aspect-ratio:16/9;object-fit:cover}
+/* Lista do que falta para o dossiê */
+.checklist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.checklist li{display:flex;gap:8px;align-items:flex-start;font-size:.875rem;color:var(--muted)}
+.checklist li .ic{flex:none;margin-top:2px}
+.checklist li.ok{color:var(--ink)}
+.checklist li.ok .ic{color:var(--green)}
+
+/* Contador dentro das abas */
+.seg a,.seg button{display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.tabn{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;margin:0;border-radius:999px;background:var(--red);color:var(--surface);font-size:.75rem;font-weight:700;line-height:1}
+.ba-after{background:var(--greensoft);border-color:var(--greenline)}
+.seg .tabn{flex:none;padding:0 6px;font-size:.75rem;font-weight:700;border-radius:999px;box-shadow:none}
+.card.flat.ba-after{background:var(--greensoft);border-color:var(--greenline)}

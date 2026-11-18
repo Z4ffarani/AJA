@@ -9,7 +9,7 @@ import { NeighborhoodMap } from '@/components/NeighborhoodMap'
 
 const FILTERS: [string, string][] = [['piso', 'Piso tátil'], ['travessia', 'Travessias'], ['sinalizacao', 'Sinalização'], ['comunicacao', 'Comunicação acessível'], ['calcada', 'Calçadas'], ['obstaculo', 'Obstáculos']]
 
-export default async function Inicio({ searchParams }: { searchParams: Promise<{ ordem?: string; categoria?: string; busca?: string; ver?: string }> }) {
+export default async function Inicio({ searchParams }: { searchParams: Promise<{ ordem?: string; categoria?: string; busca?: string; ver?: string; foco?: string }> }) {
   const sp = await searchParams
   const ordem = sp.ordem === 'recentes' ? 'recentes' : 'alta'
   const slug = await getBairroSlug()
@@ -45,7 +45,7 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
             <form className="search only-m" role="search" action="/">
               <Icon name="search" />
               <label className="sr" htmlFor="busca-m">Buscar</label>
-              <input id="busca-m" name="busca" type="search" defaultValue={sp.busca} placeholder="Buscar barreira, rua ou tema" style={{ border: 0, background: 'transparent', flex: 1, minWidth: 0, color: 'var(--ink)', font: 'inherit' }} />
+              <input id="busca-m" name="busca" type="search" defaultValue={sp.busca} autoFocus={sp.foco === 'busca'} placeholder="Buscar barreira, rua ou tema" style={{ border: 0, background: 'transparent', flex: 1, minWidth: 0, color: 'var(--ink)', font: 'inherit' }} />
             </form>
             <nav className="row wrapr" aria-label="Ordenar e filtrar">
               <Link className={`chip${ordem === 'alta' && !sp.categoria ? ' on' : ''}`} href={href({ ordem: undefined, categoria: undefined })} aria-current={ordem === 'alta' && !sp.categoria ? 'true' : undefined}>Em alta</Link>
@@ -68,7 +68,6 @@ export default async function Inicio({ searchParams }: { searchParams: Promise<{
               <h2 className="ch"><Icon name="pin" />Mapa do bairro</h2>
               <NeighborhoodMap center={[bairro.lat, bairro.lng]} pins={pins} label={mapLabel} />
               <p className="xs muted">O mapa nunca é o único caminho: cada ponto também está na lista, com endereço por extenso. Azul: aberto · verde: conquista.</p>
-              <Link className="btn ghost full sm" href="#conteudo"><Icon name="list" />Ver como lista</Link>
             </section>
             <section className="card">
               <h2 className="ch"><Icon name="chart" />O bairro em números</h2>

@@ -42,3 +42,9 @@ export function distanceM(a: { lat: number; lng: number }, b: { lat: number; lng
 // Raio para juntar automaticamente (mesma categoria) e para sugerir tópicos parecidos.
 export const AUTO_JOIN_M = 60
 export const SUGGEST_M = 150
+
+// Nome da rua para títulos: "Rua Carlos Rezende Enout 541, perto da padaria" → "Rua Carlos Rezende Enout"
+export function streetLabel(address: string) {
+  const head = address.split(/,| - | n[ºo°]\s*\d|\bperto\b|\bpróximo\b|\bproximo\b|\besquina\b/i)[0]
+  return head.replace(/\s+\d+[a-zA-Z]?\s*$/, '').replace(/\s+/g, ' ').trim() || address.trim()
+}

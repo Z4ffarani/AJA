@@ -2,10 +2,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AudioRecorder, type Recording } from './AudioRecorder'
+import { VideoRecorder, type VideoClip } from './VideoRecorder'
 import { Icon, type IconName } from './Icon'
 
 const CATS: [string, IconName, string][] = [['piso', 'piso', 'Piso tátil interrompido'], ['obstaculo', 'alert', 'Obstáculo na calçada'], ['travessia', 'sound', 'Travessia sem som ou sinal visual'], ['sinalizacao', 'eye', 'Sinalização inadequada'], ['comunicacao', 'chat', 'Falta de comunicação acessível'], ['calcada', 'ruler', 'Calçada quebrada ou irregular'], ['outro', 'more', 'Outra barreira']]
-const FMT: [string, IconName, string, string][] = [['texto', 'file', 'Escrever', 'Texto livre, do tamanho que quiser'], ['audio', 'mic', 'Falar', 'Gravação de voz; o AJA transcreve'], ['foto', 'camera', 'Foto ou vídeo', 'O AJA descreve a imagem'], ['libras', 'hand', 'Vídeo em Libras', 'Gravação em Libras; o AJA legenda']]
+const FMT: [string, IconName, string, string][] = [['texto', 'file', 'Escrever', 'Texto livre, do tamanho que quiser'], ['audio', 'mic', 'Falar', 'Grave sua voz; escrever o que disse é opcional'], ['foto', 'camera', 'Foto ou vídeo', 'Com uma descrição para quem não enxerga'], ['libras', 'hand', 'Vídeo em Libras', 'Grave pela câmera; legenda opcional']]
 const STEPS = ['O que e como', 'Onde', 'Revisar']
 
 type Topic = { slug: string; title: string; category: string; address: string; neighborhoodSlug: string } | null
@@ -38,6 +39,7 @@ export function ReportForm({ topic, format: initialFormat, bairros, bairro: init
   const [sending, setSending] = useState(false)
   const [recording, setRecording] = useState(false)
   const [audio, setAudio] = useState<Recording | null>(null)
+  const [video, setVideo] = useState<VideoClip | null>(null)
   const [parecidos, setParecidos] = useState<Parecido[]>([])
   const [escolha, setEscolha] = useState('')
   const heading = useRef<HTMLHeadingElement>(null)
@@ -49,6 +51,12 @@ export function ReportForm({ topic, format: initialFormat, bairros, bairro: init
     if (audio && audio.url !== r?.url) URL.revokeObjectURL(audio.url)
     setAudio(r)
     setFile(r ? new File([r.blob], `audio.${r.type.includes('mp4') ? 'm4a' : r.type.split('/')[1] || 'webm'}`, { type: r.type }) : null)
+  }
+
+  function pickVideo(v: VideoClip | null) {
+    if (video && video.url !== v?.url) URL.revokeObjectURL(video.url)
+    setVideo(v)
+    setFile(v ? new File([v.blob], `libras.${v.type.includes('mp4') ? 'mp4' : v.type.includes('quicktime') ? 'mov' : 'webm'}`, { type: v.type }) : null)
   }
 
   function locate() {
@@ -64,7 +72,7 @@ export function ReportForm({ topic, format: initialFormat, bairros, bairro: init
     if (step === 0) {
       if (!category) return setErro('Escolha o tipo de barreira.')
       if (format === 'texto' && body.trim().length < 5) return setErro('Conte um pouco mais sobre a barreira.')
-      if (format !== 'texto' && !file && !body.trim()) return setErro(format === 'audio' ? 'Grave ou envie um áudio.' : 'Envie uma foto ou um vídeo.')
+      if (format !== 'texto' && !file && !body.trim()) return setErro(format === 'audio' ? 'Grave ou envie um áudio.' : format === 'libras' ? 'Grave ou envie um vídeo em Libras.' : 'Envie uma foto ou um vídeo.')
     }
     if (step === 1 && address.trim().length < 3) return setErro('Diga onde fica a barreira.')
     if (step === 1 && mapsUrl.trim() && !/^https:\/\/(www\.)?(google\.[a-z.]+\/maps|maps\.google\.|maps\.app\.goo\.gl|goo\.gl\/maps)/i.test(mapsUrl.trim())) return setErro('Esse não parece um link do Google Maps. Copie o link pelo botão Compartilhar do Google Maps.')
@@ -120,7 +128,7 @@ export function ReportForm({ topic, format: initialFormat, bairros, bairro: init
           )}
           <fieldset className="stack" style={{ border: 0, margin: 0, padding: 0 }}>
             <legend className="h3" style={{ marginBottom: 12 }}>Conte do seu jeito</legend>
-            <div className="cols2">{FMT.map(([k, i, t, s]) => <Opt key={k} icon={i} title={t} sub={s} on={format === k} onClick={() => { setFormat(k); setFile(null); pickAudio(null) }} />)}</div>
+            <div className="cols2">{FMT.map(([k, i, t, s]) => <Opt key={k} icon={i} title={t} sub={s} on={format === k} onClick={() => { setFormat(k); setFile(null); pickAudio(null); pickVideo(null) }} />)}</div>
           </fieldset>
           {format === 'texto' && <div className="field"><label htmlFor="rel-body">Descreva a barreira</label><textarea className="input" id="rel-body" value={body} onChange={(e) => setBody(e.target.value)} maxLength={4000} placeholder="Ex.: o piso tátil acaba antes da faixa e eu perco a referência para atravessar." /></div>}
           {format === 'audio' && (
@@ -129,16 +137,26 @@ export function ReportForm({ topic, format: initialFormat, bairros, bairro: init
                 <AudioRecorder value={audio} onChange={pickAudio} big onRecording={setRecording} />
                 {!audio && !recording && <label className="btn sec"><Icon name="file" />Enviar arquivo<input type="file" accept={accept} className="sr" onChange={(e) => { const f = e.target.files?.[0]; if (f) pickAudio({ blob: f, type: f.type || 'audio/webm', duration: '', url: URL.createObjectURL(f) }) }} /></label>}
               </div>
-              <div className="field"><label htmlFor="rel-tr">Transcrição (opcional, você pode corrigir)</label><textarea className="input" id="rel-tr" value={body} onChange={(e) => setBody(e.target.value)} maxLength={4000} placeholder="O AJA transcreve o áudio. Se quiser, escreva ou corrija aqui." /></div>
+              <div className="field"><label htmlFor="rel-tr">O que você disse (opcional, ajuda quem é surdo)</label><textarea className="input" id="rel-tr" value={body} onChange={(e) => setBody(e.target.value)} maxLength={4000} placeholder="Escreva o que você falou no áudio." /></div>
             </div>
           )}
-          {(format === 'foto' || format === 'libras') && (
+          {format === 'libras' && (
             <div className="card flat stack s8">
-              <label className="btn sec" style={{ alignSelf: 'flex-start' }}><Icon name={format === 'libras' ? 'video' : 'camera'} />{format === 'libras' ? 'Gravar ou enviar vídeo em Libras' : 'Tirar foto ou enviar arquivo'}
+              <div className="row wrapr">
+                <VideoRecorder value={video} onChange={pickVideo} onRecording={setRecording} />
+                {!video && !recording && <label className="btn sec"><Icon name="file" />Enviar arquivo<input type="file" accept="video/*" className="sr" onChange={(e) => { const f = e.target.files?.[0]; if (f) pickVideo({ blob: f, type: f.type || 'video/mp4', duration: '', url: URL.createObjectURL(f) }) }} /></label>}
+              </div>
+              <div className="field"><label htmlFor="rel-cap">Legenda (opcional, ajuda quem não sabe Libras)</label>
+                <textarea className="input" id="rel-cap" value={body} onChange={(e) => setBody(e.target.value)} maxLength={1000} placeholder="O que você disse no vídeo" /></div>
+            </div>
+          )}
+          {format === 'foto' && (
+            <div className="card flat stack s8">
+              <label className="btn sec" style={{ alignSelf: 'flex-start' }}><Icon name="camera" />Tirar foto ou enviar arquivo
                 <input type="file" accept={accept} capture="environment" className="sr" onChange={(e) => setFile(e.target.files?.[0] ?? null)} /></label>
               {file && (file.type.startsWith('image') ? <img src={URL.createObjectURL(file)} alt="Prévia da foto escolhida" className="ev-media" /> : <video src={URL.createObjectURL(file)} controls className="ev-media" />)}
-              <div className="field"><label htmlFor="rel-cap">{format === 'libras' ? 'Legenda (o AJA gera; você pode corrigir)' : 'Descrição da imagem (para quem usa leitor de tela)'}</label>
-                <textarea className="input" id="rel-cap" value={format === 'libras' ? body : caption} onChange={(e) => (format === 'libras' ? setBody(e.target.value) : setCaption(e.target.value))} maxLength={1000} placeholder={format === 'libras' ? 'O que você disse no vídeo' : 'Ex.: o piso tátil amarelo termina cerca de 3 m antes da faixa.'} /></div>
+              <div className="field"><label htmlFor="rel-cap">Descrição da imagem (para quem usa leitor de tela)</label>
+                <textarea className="input" id="rel-cap" value={caption} onChange={(e) => setCaption(e.target.value)} maxLength={1000} placeholder="Ex.: o piso tátil amarelo termina cerca de 3 m antes da faixa." /></div>
             </div>
           )}
           <label className="row top"><input type="checkbox" checked={passes} onChange={(e) => setPasses(e.target.checked)} style={{ width: 24, height: 24, margin: '2px 0 0', accentColor: 'var(--primary)', flex: 'none' }} /><span><b>Eu passo por essa barreira</b><br /><span className="small muted">Opcional. Ajuda a mostrar quem é afetado.</span></span></label>

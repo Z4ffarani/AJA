@@ -24,8 +24,8 @@ export default async function Conquistas() {
             <div className="row wrapr"><span className="badge green"><Icon name="check" size={16} />Conquista verificada</span><Tags list={[top.categoryLabel, ...top.audiences]} /></div>
             <h2 className="h2"><Link href={`/topicos/${top.slug}`} style={{ color: 'inherit', textDecoration: 'none' }}>{top.title}</Link></h2>
             <div className="cols2">
-              <figure className="media" style={{ minHeight: 240, margin: 0 }}><span className="seal">Antes · {top.conquest?.beforeDate}</span><figcaption className="cap">{top.conquest?.before}</figcaption></figure>
-              <figure className="media" style={{ minHeight: 240, margin: 0 }}><span className="seal">Depois · {top.conquest?.afterDate}</span><figcaption className="cap">{top.conquest?.after}</figcaption></figure>
+              <div className="card flat stack s4"><span className="lbl">Como era · {top.conquest?.beforeDate}</span><p>{top.conquest?.before}</p></div>
+              <div className="card flat stack s4 ba-after"><span className="lbl">Como ficou · {top.conquest?.afterDate}</span><p>{top.conquest?.after}</p></div>
             </div>
             <Progress stage={top.stage} note={top.stageNote} />
             <div className="cols3">
@@ -34,7 +34,7 @@ export default async function Conquistas() {
               <div className="card flat"><span className="lbl">Apoios</span><span className="num">{top.supports}</span><span className="xs muted">{top.passes} passam por ali</span></div>
             </div>
             <ConquestActions slug={top.slug} ok={top.verifiedOk} notOk={top.verifiedNotOk} />
-            {top.quote && <blockquote className="stack s4" style={{ margin: 0 }}><p>“{top.quote.body}”</p><span className="small muted">{top.quote.kind === 'audio' ? 'Comentário em áudio, transcrito' : 'Comentário'}</span></blockquote>}
+            {top.quote && <blockquote className="stack s4" style={{ margin: 0 }}><p>“{top.quote.body}”</p><span className="small muted">{top.quote.kind === 'audio' ? 'Comentário em áudio' : 'Comentário'}</span></blockquote>}
           </article>
         )}
         <div className="grid">
@@ -43,13 +43,13 @@ export default async function Conquistas() {
             <div className="cols2">
               {rest.map((c) => (
                 <Link key={c.id} className="card" href={`/topicos/${c.slug}`} style={{ color: 'inherit', textDecoration: 'none' }}>
-                  <div className="media" style={{ minHeight: 120 }}><span className="seal">Depois · {c.conquest?.afterDate}</span><span className="cap">{c.conquest?.after}</span></div>
                   <b>{c.title}</b>
+                  <p className="small"><span className="muted">Como ficou · {c.conquest?.afterDate}:</span> {c.conquest?.after}</p>
                   <span className="row small wrapr"><span className="badge green">Verificada</span><span className="muted">{c.rating.toLocaleString('pt-BR')} · {c.ratings} avaliações</span></span>
                 </Link>
               ))}
             </div>
-            <p className="xs muted">Nomes de ruas e números simulados.</p>
+            <p className="xs muted">Ruas reais; conquistas, números e datas simulados do piloto. As fotos de antes e depois entram quando houver obras de verdade.</p>
           </div>
           <aside className="stack"><AskAja questions={perguntas} /></aside>
         </div>

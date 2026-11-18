@@ -208,3 +208,7 @@ alter table notifications add column if not exists body text;
 alter table notifications add column if not exists link text not null default '';
 alter table notifications add column if not exists read_at timestamptz;
 create index if not exists notifications_user_idx on notifications(user_id, read_at);
+
+-- ── v4: sem avisos sobre a própria ação; títulos sem número da casa ──
+delete from notifications where kind = 'aviso' and title in ('Seu relato entrou num tópico que já existia', 'Seu relato abriu um tópico novo');
+update topics set title = regexp_replace(title, '\s+\d+[a-zA-Z]?\s*$', '') where not example and title ~ '\s\d+[a-zA-Z]?\s*$';

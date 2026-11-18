@@ -9,7 +9,7 @@ import { AskAja } from '@/components/AskAja'
 import { EvidenceActions } from '@/components/EvidenceActions'
 import { OpenInMaps, StreetView } from '@/components/Place'
 
-const FMT: Record<string, [IconName, string]> = { texto: ['file', 'Texto'], audio: ['mic', 'Áudio · transcrito'], foto: ['camera', 'Foto · com descrição'], libras: ['hand', 'Vídeo em Libras · legendado'], mapa: ['pin', 'Google Maps · Street View'] }
+const FMT: Record<string, [IconName, string]> = { texto: ['file', 'Texto'], audio: ['mic', 'Áudio'], foto: ['camera', 'Foto ou vídeo'], libras: ['hand', 'Vídeo em Libras'], mapa: ['pin', 'Google Maps · Street View'] }
 
 export const metadata = { title: 'Evidências' }
 

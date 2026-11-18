@@ -46,7 +46,8 @@ export default async function Voluntario({ params }: { params: Promise<{ id: str
           </div>
           <aside className="stack">
             <section className="card"><h2 className="ch"><Icon name="link" />Contato externo</h2><p className="small">Para trabalhos profissionais, fale com a {v.name.split(' ')[0]} pelos canais dela. Contratações não acontecem dentro do AJA.</p>
-              {v.links.map((l) => <a key={l.url} className="btn sec full sm" href={l.url} target="_blank" rel="noopener noreferrer"><Icon name={l.url.startsWith('mailto') ? 'mail' : 'link'} />{l.label}</a>)}
+              {v.links.filter((l) => !l.url.includes('example.com')).map((l) => <a key={l.url} className="btn sec full sm" href={l.url} target="_blank" rel="noopener noreferrer"><Icon name={l.url.startsWith('mailto') ? 'mail' : 'link'} />{l.label}<span className="sr"> (abre em nova aba)</span></a>)}
+              {v.links.some((l) => l.url.includes('example.com')) && <p className="small muted">Perfil de exemplo do piloto. Aqui aparecem o site e o contato profissional que a pessoa voluntária quiser divulgar.</p>}
               <p className="xs muted">Links de exemplo no piloto.</p></section>
             <section className="card soft"><h2 className="ch"><Icon name="grad" />Seja voluntário</h2><p className="small">Arquitetura, engenharia, terapia ocupacional, Libras, direito: seu conhecimento ajuda a transformar relatos em propostas.</p><Link className="btn full sm" href="/entrar">Quero contribuir</Link></section>
             <AskAja questions={perguntas} />

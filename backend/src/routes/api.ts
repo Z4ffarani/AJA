@@ -4,7 +4,7 @@ import { sql } from '../db.js'
 import { checkPassword, currentUserId, hashPassword, requireUser, setSessionCookie, signSession, COOKIE } from '../auth.js'
 import { allowedType, baseType, deleteFile, loadFile, saveFile } from '../storage.js'
 import { placeFromMapsLink } from '../maps.js'
-import { AUTO_JOIN_M, SUGGEST_M, distanceM, sameStreet, streetOf } from '../matching.js'
+import { AUTO_JOIN_M, SUGGEST_M, distanceM, sameStreet, streetLabel, streetOf } from '../matching.js'
 import { buildDossier } from '../pdf.js'
 
 const STAGES = ['Relatado', 'Tópico', 'Dossiê', 'Protocolo', 'Em execução', 'Verificado']
@@ -30,7 +30,7 @@ const br = (d: Date | string | null) => (d ? new Date(d).toLocaleDateString('pt-
 
 function stageNote(t: any) {
   switch (t.stage) {
-    case 0: return 'Aguardando outros relatos'
+    case 0: return 'Aguardando relatos de outras pessoas'
     case 1: return 'Reunindo evidências'
     case 2: return t.dossier_sent_at ? 'Dossiê enviado' : 'Dossiê pronto para envio'
     case 3: return `Protocolo SP156 aberto há ${days(t.protocol_opened_at)} dias`
@@ -125,6 +125,38 @@ export async function apiRoutes(app: FastifyInstance) {
   const snippet = (s: string) => (s.length > 140 ? s.slice(0, 137).trimEnd() + '…' : s)
   const firstName = (s: string) => s.trim().split(/\s+/)[0] ?? s
 
+  // Quando um tópico avança sozinho (no protótipo, no lugar dos agentes):
+  //   Relatado → Tópico: relatos de 2 pessoas diferentes
+  //   Tópico → Dossiê: relatos de 3 pessoas, ao menos 1 evidência visual (foto, vídeo ou Street View) e o local no mapa
+  // Daí em diante (protocolo, obra, verificação) depende da prefeitura e, no piloto, é simulado.
+  const META = { topico: 2, pessoas: 3, visual: 1 }
+  async function progress(topicId: string) {
+    const [p] = await sql`select
+      (select count(distinct coalesce(user_id::text, id::text))::int from reports where topic_id = ${topicId}) as pessoas,
+      (select count(*)::int from reports where topic_id = ${topicId} and (format in ('foto', 'libras', 'mapa') or media_type like 'image/%' or media_type like 'video/%')) as visual,
+      (select lat is not null from topics where id = ${topicId}) as local`
+    return { pessoas: p.pessoas, visual: p.visual, local: Boolean(p.local), metaPessoas: META.pessoas, metaVisual: META.visual, metaTopico: META.topico }
+  }
+  async function advance(topicId: string) {
+    const [t] = await sql`select stage, example, dossier_number, title from topics where id = ${topicId}`
+    if (!t || t.example || t.stage > 2) return
+    const p = await progress(topicId)
+    const target = p.pessoas >= META.pessoas && p.visual >= META.visual && p.local ? 2 : p.pessoas >= META.topico ? 1 : 0
+    if (target === t.stage) return
+    await sql`update topics set stage = ${target} where id = ${topicId}`
+    if (target === 2 && !t.dossier_number) {
+      const [n] = await sql`select count(*)::int + 100 as n from topics where dossier_number is not null`
+      await sql`update topics set dossier_number = ${'AJA-' + String(n.n).padStart(4, '0')}, dossier_at = current_date, dossier_version = 1 where id = ${topicId}`
+    }
+    if (target > t.stage) {
+      const msg = target === 2 ? ['Dossiê pronto', 'O tópico reuniu relatos de 3 pessoas, evidência visual e o local no mapa. O dossiê está pronto para envio.']
+        : ['Tópico confirmado', 'Outra pessoa relatou a mesma barreira.']
+      await sql`insert into timeline (topic_id, happened_on, title, body) values (${topicId}, current_date, ${msg[0]}, ${msg[1]})`
+      for (const uid of await reportersOf(topicId))
+        await sql`insert into notifications (user_id, topic_id, kind, title, link) values (${uid}, ${topicId}, 'aviso', ${target === 2 ? 'O tópico que você relatou ganhou o dossiê' : 'Outra pessoa confirmou a barreira que você relatou'}, ${target === 2 ? '/dossie' : '/evidencias'})`
+    }
+  }
+
   app.get('/health', async () => ({ status: 'ok' }))
 
   // ── Conta ───────────────────────────────────────────────
@@ -208,6 +240,7 @@ export async function apiRoutes(app: FastifyInstance) {
     const author = t.concept_author ? (await sql`select id, name, profession from users where id = ${t.concept_author}`)[0] : null
     return {
       ...shape(t),
+      progresso: await progress(t.id),
       conceptAuthor: author,
       evidenceList: reports.map((r: any) => ({ id: r.id, format: r.format, body: r.body, caption: r.caption, media: r.media_key ? `/api/arquivos/${r.media_key}` : null, mediaType: r.media_type, passesBy: r.passes_by, ago: since(r.created_at),
         place: r.lat != null ? { lat: r.lat, lng: r.lng, heading: r.heading ?? 0 } : null, mapsUrl: r.maps_url, mine: Boolean(userId && r.user_id === userId) })),
@@ -423,7 +456,6 @@ export async function apiRoutes(app: FastifyInstance) {
 
     // Evidência para um tópico escolhido pela pessoa; senão, junta a um tópico aberto da mesma categoria
     // na mesma rua (abreviações igualadas) ou a menos de 60 m; senão, cria um tópico novo.
-    const street = r.address.split(',')[0].trim()
     let near: { id: string; slug: string }[] = []
     if (r.topic) {
       near = await sql`select id, slug from topics where slug = ${r.topic}`
@@ -437,7 +469,7 @@ export async function apiRoutes(app: FastifyInstance) {
     }
     let topic = near[0]
     if (!topic) {
-      const base = `${CATEGORY[r.category]} em ${street}`
+      const base = `${CATEGORY[r.category]} em ${streetLabel(r.address)}`
       const slug = (base.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now().toString(36)).slice(0, 80)
       ;[topic] = await sql`insert into topics (slug, title, category, audiences, address, neighborhood, neighborhood_slug, lat, lng, heading, summary, photo_description)
         values (${slug}, ${base}, ${r.category}, ${['visual']}, ${r.address}, ${hood.name}, ${hood.slug}, ${place?.lat ?? null}, ${place?.lng ?? null}, ${place?.heading ?? null}, ${r.body || r.caption}, ${r.caption}) returning id, slug`
@@ -449,8 +481,8 @@ export async function apiRoutes(app: FastifyInstance) {
       values (${topic.id}, ${userId}, ${r.category}, ${format}, ${r.body}, ${r.caption}, ${mediaKey}, ${file?.type ?? null}, ${r.address}, ${r.passesBy === 'true'},
         ${place?.lat ?? null}, ${place?.lng ?? null}, ${place?.heading ?? null}, ${r.mapsUrl || null})`
     await sql`update topics set updated_at = now() where id = ${topic.id}`
+    await advance(topic.id)
     if (userId) {
-      await sql`insert into notifications (user_id, topic_id, title) values (${userId}, ${topic.id}, ${near[0] ? 'Seu relato entrou num tópico que já existia' : 'Seu relato abriu um tópico novo'})`
       if (r.passesBy === 'true') await sql`insert into supports (topic_id, user_id, passes_by) values (${topic.id}, ${userId}, true) on conflict (topic_id, user_id) do update set passes_by = true`
     }
     return { slug: topic.slug, joined: Boolean(near[0]) }
@@ -572,6 +604,7 @@ export async function apiRoutes(app: FastifyInstance) {
       return { topicDeleted: true }
     }
     await sql`update topics set updated_at = now() where id = ${own.r.topic_id}`
+    await advance(own.r.topic_id)
     return { topicDeleted: false, slug: own.r.slug }
   })
 
