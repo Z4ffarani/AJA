@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { api } from '@/lib/api'
 import type { Question } from '@/lib/types'
 import { MHead } from '@/components/Shell'
+import { Crumbs } from '@/components/Crumbs'
 import { Icon, type IconName } from '@/components/Icon'
 import { AskAja } from '@/components/AskAja'
 
@@ -20,6 +21,7 @@ export default async function Voluntario({ params }: { params: Promise<{ id: str
     <>
       <MHead back="/" title="Perfil" />
       <main className="wrap" id="conteudo">
+        <Crumbs items={[['Início', '/'], ['Voluntários'], [v.name]]} />
         <div className="grid">
           <div className="stack s24">
             <section className="card p28"><div className="row top wrapr" style={{ gap: 20 }}><span className="avatar lg" aria-hidden="true">{initials}</span>

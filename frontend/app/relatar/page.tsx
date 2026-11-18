@@ -1,6 +1,7 @@
 import { api, getBairroSlug } from '@/lib/api'
 import type { Bairro, Question, TopicDetail } from '@/lib/types'
 import { MHead } from '@/components/Shell'
+import { Crumbs } from '@/components/Crumbs'
 import { ReportForm } from '@/components/ReportForm'
 import { Icon } from '@/components/Icon'
 import { AskAja } from '@/components/AskAja'
@@ -20,6 +21,7 @@ export default async function Relatar({ searchParams }: { searchParams: Promise<
     <>
       <MHead back={t ? `/topicos/${t.slug}` : '/'} title={t ? 'Adicionar evidência' : 'Relatar barreira'} />
       <main className="wrap" id="conteudo">
+        {t && <Crumbs items={[['Início', '/'], [t.title, `/topicos/${t.slug}`], ['Adicionar evidência']]} />}
         <div className="grid">
           <ReportForm topic={t ? { slug: t.slug, title: t.title, category: t.category, address: t.address, neighborhoodSlug: t.neighborhoodSlug } : null} format={sp.formato} bairros={bairros.map((b) => ({ slug: b.slug, name: b.name }))} bairro={bairro} />
           <aside className="stack" aria-label="Depois do relato">

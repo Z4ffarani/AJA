@@ -165,3 +165,14 @@ button:disabled,.btn[aria-disabled=true]{opacity:.6;cursor:not-allowed}
 @container (max-width: 760px){
   .c3d-tools{justify-content:center;row-gap:8px}
 }
+/* Trilha de navegação (computador) */
+.crumbs{margin:0 0 12px}
+.crumbs ol{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.875rem;color:var(--muted)}
+.crumbs li{display:inline-flex;gap:6px;align-items:center;min-width:0}
+.crumbs li:last-child span[aria-current]{color:var(--ink);font-weight:600}
+.crumbs li a{max-width:42ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Passo por essa barreira marcado */
+.aja .btn.sec.pass[aria-pressed="true"]{background:var(--primarysoft);border-color:var(--primary);color:var(--primary)}
+/* Concept 3D: botões soltos sobre a cena e legenda em caixinhas */
+.c3d-btns{background:none!important;border:0!important;padding:0!important;gap:6px!important}
+.c3d-legend li{background:var(--surface2);border-radius:12px;padding:12px}

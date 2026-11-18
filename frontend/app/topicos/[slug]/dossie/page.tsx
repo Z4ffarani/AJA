@@ -1,6 +1,6 @@
-import Link from 'next/link'
 import { loadTopic } from '@/lib/topic'
 import { MHead } from '@/components/Shell'
+import { Crumbs } from '@/components/Crumbs'
 import { Icon } from '@/components/Icon'
 import { ListenButton } from '@/components/ListenButton'
 import { AskAja } from '@/components/AskAja'
@@ -21,7 +21,7 @@ export default async function Dossie({ params }: { params: Promise<{ slug: strin
       <MHead back={`/topicos/${t.slug}`} title="Dossiê" />
       <main className="wrap" id="conteudo">
         <div className="stack s8">
-          <p className="small muted only-d"><Link href="/">Início</Link> › <Link href={`/topicos/${t.slug}`}>{t.title}</Link> › Dossiê</p>
+          <Crumbs items={[['Início', '/'], [t.title, `/topicos/${t.slug}`], ['Dossiê']]} />
           <h1 className="h1">Dossiê da demanda</h1>
           <p className="muted">Documento que o AJA envia à prefeitura. Reúne evidências e fundamentos, sem dados pessoais.</p>
         </div>

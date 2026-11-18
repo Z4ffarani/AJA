@@ -65,10 +65,10 @@ export function SupportCard({ slug, initial }: { slug: string; initial: State })
       <button className={`btn full${on ? '' : ''}`} type="button" aria-pressed={on} onClick={() => send(on ? null : { passesBy: passes })}>
         <Icon name={on ? 'check' : 'up'} />{on ? 'Você apoia esta melhoria' : 'Apoiar esta melhoria'}
       </button>
-      <label className="row top">
-        <input type="checkbox" checked={passes} onChange={(e) => send({ passesBy: e.target.checked })} style={{ width: 24, height: 24, margin: '2px 0 0', accentColor: 'var(--primary)', flex: 'none' }} />
-        <span><b>Passo por essa barreira</b><br /><span className="small muted">Opcional. Conta como confirmação de que a barreira existe e ajuda o tópico a avançar.</span></span>
-      </label>
+      <button className="btn sec full pass" type="button" aria-pressed={passes} onClick={() => send({ passesBy: !passes })}>
+        <Icon name="piso" />{passes ? 'Você passa por essa barreira' : 'Passo por essa barreira'}{passes && <Icon name="check" size={16} />}
+      </button>
+      <p className="small muted">Opcional. Conta como confirmação de que a barreira existe e ajuda o tópico a avançar.</p>
       {erro && <p className="small c-red" role="alert">{erro}</p>}
       <p className="xs muted">Apoio mostra mobilização, mas não é condição para a barreira ser atendida.</p>
     </section>
@@ -83,7 +83,7 @@ export function SupportFoot({ slug, initial }: { slug: string; initial: State })
   return (
     <div className="foot" role="region" aria-label="Ações rápidas"><div className="row">
       <button className="btn grow" type="button" aria-pressed={on} onClick={() => send(on ? null : { passesBy: passes })}><Icon name={on ? 'check' : 'up'} />{on ? 'Apoiando' : 'Apoiar'} · {s.supports}</button>
-      <button className="btn sec" type="button" aria-pressed={passes} onClick={() => send({ passesBy: !passes })}><Icon name={passes ? 'check' : 'piso'} />Passo por ali</button>
+      <button className="btn sec pass" type="button" aria-pressed={passes} onClick={() => send({ passesBy: !passes })}><Icon name="piso" />Passo por ali{passes && <Icon name="check" size={16} />}</button>
     </div></div>
   )
 }
